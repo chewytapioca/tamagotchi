@@ -55,6 +55,12 @@ create table public.pets (
 
   -- progression
   xp           integer default 0,
+
+  -- economy + customization
+  coins        integer default 50 check (coins >= 0),
+  owned_items  jsonb   default '[]'::jsonb,   -- ["bow_pink", "bg_meadow", ...]
+  equipped     jsonb   default '{}'::jsonb,   -- {"hat":"bow_pink","background":"bg_meadow","decor":["plant"]}
+
   born_at      timestamptz default now(),
   last_decay   timestamptz default now(),  -- when decay last ran
   last_visit   timestamptz default now(),
@@ -86,7 +92,8 @@ create policy "public can read pets"
 
 
 -- ── pet events ───────────────────────────────────────────────
-create type pet_action as enum ('feed', 'play', 'clean', 'sleep', 'decay', 'evolve');
+create type pet_action as enum
+  ('feed', 'play', 'clean', 'sleep', 'treat', 'hug', 'decay', 'evolve', 'shop', 'game');
 
 create table public.pet_events (
   id         uuid primary key default uuid_generate_v4(),
