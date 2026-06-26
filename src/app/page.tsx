@@ -2,8 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import PetDisplay, { PetDisplayHandle } from '@/components/PetDisplay'
-import { getMood, getAgeInDays, getNextEvolutionProgress } from '@/lib/pet'
+import { PetDisplayHandle } from '@/components/PetDisplay'
+import { PetWithCosmetics, SceneBackground, RoomDecor } from '@/components/Cosmetics'
+import Shop from '@/components/Shop'
+import GamesHub from '@/components/GamesHub'
+import { getAgeInDays, getNextEvolutionProgress } from '@/lib/pet'
 import type { Pet, PetMood, PetAction } from '@/types/pet'
 
 interface PetState { pet: Pet; mood: PetMood; evolved: boolean }
@@ -173,6 +176,7 @@ export default function HomePage() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
   const [themeKey, setThemeKey] = useState<ThemeKey>('sakura')
   const [showThemes, setShowThemes] = useState(false)
+  const [panel, setPanel] = useState<'shop' | 'games' | null>(null)
   const petRef = useRef<PetDisplayHandle>(null)
   const theme = THEMES[themeKey]
 
@@ -240,6 +244,15 @@ export default function HomePage() {
         setEvolvedMsg(`✦ ${data.pet.name} evolved! ✦`)
         setTimeout(() => setEvolvedMsg(null), 4500)
       }, 1900)
+    }
+  }
+
+  // called by Shop / GamesHub after a buy / equip / reward succeeds
+  function applyPetState(data: PetState) {
+    setState(data)
+    if (data.evolved) {
+      setEvolvedMsg(`✦ ${data.pet.name} evolved! ✦`)
+      setTimeout(() => setEvolvedMsg(null), 4500)
     }
   }
 
@@ -411,7 +424,7 @@ export default function HomePage() {
           position: 'absolute', top: '14px', left: '50%',
           transform: 'translateX(-50%)',
           fontSize: '16px', color: theme.ink,
-          letterSpacing: '8px', opacity: 0.6, ...pxFont,
+          ...pxFont, letterSpacing: '8px', opacity: 0.6,
         }}>⋆ ♡ ⋆ ♡ ⋆</div>
 
         {/* speaker holes */}
@@ -463,7 +476,7 @@ export default function HomePage() {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             padding: '0 4px 10px', fontSize: '11px',
             color: theme.shellLight, fontWeight: 700,
-            letterSpacing: '0.12em', ...pxFont,
+            ...pxFont, letterSpacing: '0.12em',
           }}>
             <span>● ●</span>
             <span style={{ fontSize: '13px', ...titleFont, fontWeight: 'normal' }}>
@@ -499,6 +512,8 @@ export default function HomePage() {
           }}>
             {/* faded pattern */}
             {screenPattern()}
+            {/* equipped scene background (covers pattern when set) */}
+            <SceneBackground backgroundId={state?.pet.equipped?.background}/>
             {/* scanlines */}
             <div aria-hidden style={{
               position: 'absolute', inset: 0,
@@ -513,18 +528,42 @@ export default function HomePage() {
             }}/>
             <ActionParticles action={particleAction}/>
             {screenContent}
+            {/* room decorations along the bottom */}
+            <RoomDecor decor={state?.pet.equipped?.decor}/>
           </div>
         </div>
 
         {/* button grid — 3×2 balanced */}
         {state && (
           <>
+            {/* shop + arcade menu */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              {([
+                { key: 'shop' as const, label: 'SHOP', icon: '🛍' },
+                { key: 'games' as const, label: 'ARCADE', icon: '🎮' },
+              ]).map(m => (
+                <button key={m.key}
+                  onClick={() => setPanel(m.key)}
+                  style={{
+                    flex: 1, padding: '8px 0', borderRadius: '12px',
+                    border: `2px solid ${theme.ink}`,
+                    background: `linear-gradient(180deg, ${theme.shellLight}, ${theme.shell})`,
+                    color: theme.ink, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.12)`,
+                    ...titleFont,
+                  }}
+                ><span style={{ fontSize: '16px' }}>{m.icon}</span>{m.label}</button>
+              ))}
+            </div>
+
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: '14px 8px',
               justifyItems: 'center',
-              marginTop: '20px',
+              marginTop: '14px',
             }}>
               <ActionButton cfg={ACTIONS[0]} prominent/>  {/* feed */}
               <ActionButton cfg={ACTIONS[1]} prominent/>  {/* play */}
@@ -541,7 +580,7 @@ export default function HomePage() {
                   fontSize: '12px', padding: '4px 12px', borderRadius: '99px',
                   border: `1px solid ${theme.ink}33`, background: 'transparent',
                   color: theme.ink, cursor: 'pointer',
-                  letterSpacing: '0.1em', opacity: 0.65, ...pxFont,
+                  ...pxFont, letterSpacing: '0.1em', opacity: 0.65,
                 }}
               >sign out</button>
             </div>
@@ -552,7 +591,7 @@ export default function HomePage() {
           position: 'absolute', bottom: '14px', left: '50%',
           transform: 'translateX(-50%)',
           fontSize: '11px', color: theme.ink, opacity: 0.35,
-          letterSpacing: '6px', ...pxFont,
+          ...pxFont, letterSpacing: '6px',
         }}>⋆ ｡ ⋆ ｡ ⋆</div>
       </div>
 
@@ -595,7 +634,7 @@ export default function HomePage() {
   if (loading) return (
     <Shell screenContent={
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', flex:1, position:'relative', zIndex:1 }}>
-        <p style={{ fontSize: '16px', color: theme.ink, letterSpacing: '0.3em', ...pxFont }}>...loading...</p>
+        <p style={{ fontSize: '16px', color: theme.ink, ...pxFont, letterSpacing: '0.3em' }}>...loading...</p>
       </div>
     }/>
   )
@@ -642,9 +681,12 @@ export default function HomePage() {
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         fontSize: '14px', color: theme.ink, fontWeight: 700,
-        letterSpacing: '0.05em', ...pxFont,
+        ...pxFont, letterSpacing: '0.05em',
       }}>
         <span style={{ background: '#ffffffee', padding: '2px 8px', borderRadius: '4px' }}>♡ {pet.name}</span>
+        <span style={{ background: '#ffffffee', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }} title="coins">
+          🪙 {pet.coins}
+        </span>
         <span style={{ background: '#ffffffee', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
           {age}d · {pet.stage}
         </span>
@@ -656,7 +698,7 @@ export default function HomePage() {
         justifyContent: 'center', margin: '4px 0',
         flexShrink: 0,
       }}>
-        <PetDisplay ref={petRef} pet={pet} mood={mood} onPet={fetchPet} inkColor={theme.ink}/>
+        <PetWithCosmetics ref={petRef} pet={pet} mood={mood} onPet={fetchPet} inkColor={theme.ink}/>
       </div>
 
       {/* status message */}
@@ -753,5 +795,23 @@ export default function HomePage() {
     </div>
   )
 
-  return <Shell screenContent={screenContent}/>
+  return (
+    <>
+      <Shell screenContent={screenContent}/>
+      {panel === 'shop' && (
+        <Shop
+          pet={pet} ink={theme.ink} accent={theme.accent}
+          onClose={() => setPanel(null)}
+          onUpdate={applyPetState}
+        />
+      )}
+      {panel === 'games' && (
+        <GamesHub
+          pet={pet} ink={theme.ink} accent={theme.accent}
+          onClose={() => setPanel(null)}
+          onUpdate={applyPetState}
+        />
+      )}
+    </>
+  )
 }

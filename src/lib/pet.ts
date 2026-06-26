@@ -4,13 +4,14 @@ const DECAY_PER_HOUR: StatDelta = { hunger: -4, happy: -3, clean: -2, energy: -1
 const DECAY_FLOOR = 5
 
 // added: treat (premium food, more xp & happy) and hug (free affection)
+// each action also drips a few coins so the shop economy flows from play.
 const ACTION_EFFECTS: Record<PetAction, StatDelta> = {
-  feed:  { hunger: +22, clean:  -4,                 xp: 3 },
-  play:  { happy:  +20, hunger: -8,  energy: -10,   xp: 5 },
-  clean: { clean:  +28, happy:  +5,                 xp: 2 },
-  sleep: { energy: +30, hunger: -6,                 xp: 1 },
-  treat: { hunger: +12, happy:  +18, clean: -6,     xp: 6 },
-  hug:   { happy:  +12, energy: +3,                 xp: 2 },
+  feed:  { hunger: +22, clean:  -4,                 xp: 3, coins: 1 },
+  play:  { happy:  +20, hunger: -8,  energy: -10,   xp: 5, coins: 2 },
+  clean: { clean:  +28, happy:  +5,                 xp: 2, coins: 1 },
+  sleep: { energy: +30, hunger: -6,                 xp: 1, coins: 1 },
+  treat: { hunger: +12, happy:  +18, clean: -6,     xp: 6, coins: 1 },
+  hug:   { happy:  +12, energy: +3,                 xp: 2, coins: 1 },
 }
 
 const EVOLUTION_XP: Record<PetStage, number> = {
@@ -58,6 +59,7 @@ export function applyAction(pet: Pet, action: PetAction): {
     clean:  clamp(pet.clean  + (effect.clean  ?? 0)),
     energy: clamp(pet.energy + (effect.energy ?? 0)),
     xp:     newXp,
+    coins:  (pet.coins ?? 0) + (effect.coins ?? 0),
     last_visit: new Date().toISOString(),
   }
   const { evolved, newStage } = checkEvolution(pet.stage, newXp)
@@ -86,7 +88,7 @@ export function applyDecay(pet: Pet): { updates: Partial<Pet>; delta: StatDelta 
   return { updates, delta }
 }
 
-function checkEvolution(currentStage: PetStage, xp: number): {
+export function checkEvolution(currentStage: PetStage, xp: number): {
   evolved: boolean; newStage: PetStage | null
 } {
   if (currentStage === 'adult') return { evolved: false, newStage: null }
