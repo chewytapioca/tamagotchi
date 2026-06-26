@@ -12,7 +12,7 @@ interface Props {
 export interface PetDisplayHandle { playAction: (action: PetAction) => void }
 
 type FaceKey =
-  | 'default' | 'happy' | 'sparkle' | 'sad' | 'miserable'
+  | 'default' | 'happy' | 'sparkle' | 'sad' | 'miserable' | 'angry' | 'sick'
   | 'eating' | 'partying' | 'bathing' | 'sleeping'
   | 'lovestruck' | 'delighted'
   | 'blink' | 'look_left' | 'look_right'
@@ -24,6 +24,8 @@ function pickFace(mood: PetMood['label'], action: PetAction | null): FaceKey {
   if (action === 'clean') return 'bathing'
   if (action === 'hug')   return 'lovestruck'
   if (action === 'sleep') return 'sleeping'
+  if (mood === 'sick')      return 'sick'
+  if (mood === 'angry')     return 'angry'
   if (mood === 'ecstatic')  return 'sparkle'
   if (mood === 'happy')     return 'happy'
   if (mood === 'content')   return 'default'
@@ -189,6 +191,18 @@ function tears(g: Grid) {
 function bubbles(g: Grid) {
   set(g, 2, 9, 'U'); set(g, 4, 6, 'U'); set(g, 24, 8, 'U'); set(g, 25, 12, 'U'); set(g, 3, 14, 'U')
 }
+function eyesAngry(g: Grid) {            // furrowed brows slanting toward the nose
+  set(g, L[0], 12, 'X'); set(g, L[1], 12, 'X'); set(g, L[2], 13, 'X')  // \
+  set(g, R[0], 13, 'X'); set(g, R[1], 12, 'X'); set(g, R[2], 12, 'X')  // /
+  for (const c of [...L, ...R]) set(g, c, 14, 'X')                      // narrowed eyes
+}
+function eyesSick(g: Grid) {            // heavy half-closed lids
+  for (const c of [...L, ...R]) set(g, c, 14, 'X')
+  set(g, L[1], 15, 'X'); set(g, R[1], 15, 'X')
+}
+function sweat(g: Grid) {               // a worried drop by the temple
+  set(g, 20, 11, 'T'); set(g, 20, 12, 'T')
+}
 
 const FACES: Record<FaceKey, (g: Grid) => void> = {
   default:    g => { eyesOpen(g);  blush(g);    mouthOmega(g) },
@@ -199,6 +213,8 @@ const FACES: Record<FaceKey, (g: Grid) => void> = {
   look_right: g => { eyesOpen(g, 1);  blush(g); mouthOmega(g) },
   sad:        g => { eyesSad(g);   mouthFrown(g) },
   miserable:  g => { eyesSad(g);   mouthFrown(g); tears(g) },
+  angry:      g => { eyesAngry(g); mouthFrown(g) },
+  sick:       g => { eyesSick(g);  mouthFrown(g); sweat(g) },
   eating:     g => { eyesHappy(g); blush(g);    mouthOpen(g) },
   partying:   g => { eyesStar(g);  blushBig(g); mouthSmile(g); sparkles(g) },
   bathing:    g => { eyesHappy(g); blush(g);    mouthOmega(g); bubbles(g) },

@@ -6,7 +6,11 @@ import { PetDisplayHandle } from '@/components/PetDisplay'
 import { PetWithCosmetics, SceneBackground, RoomDecor } from '@/components/Cosmetics'
 import Shop from '@/components/Shop'
 import GamesHub from '@/components/GamesHub'
+import InfoPanel from '@/components/InfoPanel'
+import InventoryBar from '@/components/InventoryBar'
 import { getAgeInDays, getNextEvolutionProgress } from '@/lib/pet'
+import { bondLevel, bondTier, BOND_MAX, getAchievement } from '@/lib/progress'
+import { getWeather, clockLabel, getSpecialDay } from '@/lib/world'
 import type { Pet, PetMood, PetAction } from '@/types/pet'
 
 interface PetState { pet: Pet; mood: PetMood; evolved: boolean }
@@ -90,6 +94,8 @@ function moodMessage(name: string, mood: PetMood['label']): string {
     content:   [`${name} is chilling`, `${name} is content`, `all is well ♡`],
     sad:       [`${name} is feeling down...`, `${name} needs you`, `${name} is hungry...`],
     miserable: [`${name} is miserable :(`, `please help ${name}!`, `${name} needs care!`],
+    angry:     [`${name} is cranky!`, `${name} wants attention!`, `${name} is upset...`],
+    sick:      [`${name} feels unwell...`, `${name} needs a bath & rest`, `${name} is poorly...`],
   }
   const opts = messages[mood]
   return opts[Math.floor(Math.random() * opts.length)]
@@ -176,9 +182,24 @@ export default function HomePage() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
   const [themeKey, setThemeKey] = useState<ThemeKey>('sakura')
   const [showThemes, setShowThemes] = useState(false)
-  const [panel, setPanel] = useState<'shop' | 'games' | null>(null)
+  const [panel, setPanel] = useState<'shop' | 'games' | 'info' | null>(null)
+  const [now, setNow] = useState(() => new Date())
+  const [offline, setOffline] = useState<{ awayMs: number; delta: Record<string, number> } | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const petRef = useRef<PetDisplayHandle>(null)
   const theme = THEMES[themeKey]
+
+  // ticking clock for the device header
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // briefly surface a toast (events, food reactions, achievements)
+  const flashToast = useCallback((msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(t => (t === msg ? null : t)), 3500)
+  }, [])
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('tamago-theme') : null
@@ -204,9 +225,12 @@ export default function HomePage() {
       const data = await res.json()
       setState(data.pet ? data : null)
       if (data.pet) setStatusMsg(moodMessage(data.pet.name, data.mood.label))
+      if (data.offline) setOffline(data.offline)
+      if (data.event) flashToast(`${data.event.emoji} ${data.event.text} +${data.event.coins}🪙`)
+      if (data.unlocked?.length) flashToast(`🏆 ${getAchievement(data.unlocked[0])?.name ?? 'Achievement'} unlocked!`)
     } catch { setError('failed to load pet') }
     finally { setLoading(false) }
-  }, [user])
+  }, [user, flashToast])
 
   useEffect(() => { fetchPet() }, [fetchPet])
   useEffect(() => {
@@ -247,13 +271,15 @@ export default function HomePage() {
     }
   }
 
-  // called by Shop / GamesHub after a buy / equip / reward succeeds
-  function applyPetState(data: PetState) {
-    setState(data)
+  // called by Shop / GamesHub / InventoryBar after a mutation succeeds
+  function applyPetState(data: PetState & { unlocked?: string[]; message?: string }) {
+    setState({ pet: data.pet, mood: data.mood, evolved: data.evolved })
+    if (data.message) setStatusMsg(data.message)
     if (data.evolved) {
       setEvolvedMsg(`✦ ${data.pet.name} evolved! ✦`)
       setTimeout(() => setEvolvedMsg(null), 4500)
     }
+    if (data.unlocked?.length) flashToast(`🏆 ${getAchievement(data.unlocked[0])?.name ?? 'Achievement'} unlocked!`)
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -536,11 +562,12 @@ export default function HomePage() {
         {/* button grid — 3×2 balanced */}
         {state && (
           <>
-            {/* shop + arcade menu */}
+            {/* shop + arcade + more menu */}
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
               {([
                 { key: 'shop' as const, label: 'SHOP', icon: '🛍' },
                 { key: 'games' as const, label: 'ARCADE', icon: '🎮' },
+                { key: 'info' as const, label: 'INFO', icon: '📖' },
               ]).map(m => (
                 <button key={m.key}
                   onClick={() => setPanel(m.key)}
@@ -674,6 +701,10 @@ export default function HomePage() {
   const age = getAgeInDays(pet.born_at)
   const evoProgress = getNextEvolutionProgress(pet)
   const currentLevel = Math.floor(pet.xp / 50) + 1
+  const weather = getWeather(now)
+  const special = getSpecialDay(pet.born_at, now)
+  const bond = bondLevel(pet.affection ?? 0)
+  const clock = clockLabel(now)
 
   const screenContent = (
     <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', height:'100%', flex:1, gap:'5px' }}>
@@ -687,10 +718,22 @@ export default function HomePage() {
         <span style={{ background: '#ffffffee', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }} title="coins">
           🪙 {pet.coins}
         </span>
-        <span style={{ background: '#ffffffee', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
-          {age}d · {pet.stage}
+        <span style={{ background: '#ffffffee', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}
+          title={`${weather.name} · ${pet.stage}`}>
+          {weather.emoji} Day {age + 1} · {clock}
         </span>
       </div>
+
+      {/* special-day banner */}
+      {special && (
+        <div style={{
+          textAlign: 'center', fontSize: '12px', color: theme.ink, fontWeight: 700,
+          background: `${theme.accent}22`, border: `1.5px solid ${theme.accent}`,
+          borderRadius: '8px', padding: '3px 8px', ...pxFont,
+        }}>
+          {special.emoji} {special.name}! — {special.greeting}
+        </div>
+      )}
 
       {/* pet — BIG and centered */}
       <div style={{
@@ -699,6 +742,15 @@ export default function HomePage() {
         flexShrink: 0,
       }}>
         <PetWithCosmetics ref={petRef} pet={pet} mood={mood} onPet={fetchPet} inkColor={theme.ink}/>
+      </div>
+
+      {/* affection / bond hearts */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+        fontSize: '12px', color: theme.ink, ...pxFont,
+      }} title={`${bondTier(bond)} — ${bond}/${BOND_MAX}`}>
+        <span>{Array.from({ length: BOND_MAX }).map((_, i) => i < bond ? '💗' : '🤍').join('')}</span>
+        <span style={{ fontWeight: 700 }}>{bondTier(bond)}</span>
       </div>
 
       {/* status message */}
@@ -791,6 +843,9 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* treats inventory — tap to feed */}
+      <InventoryBar pet={pet} ink={theme.ink} onResult={applyPetState}/>
+
       {error && <p style={{ fontSize: '12px', color: '#c44', margin: 0, textAlign: 'center', ...pxFont }}>{error}</p>}
     </div>
   )
@@ -812,6 +867,61 @@ export default function HomePage() {
           onUpdate={applyPetState}
         />
       )}
+      {panel === 'info' && (
+        <InfoPanel
+          pet={pet} ink={theme.ink} accent={theme.accent}
+          onClose={() => setPanel(null)}
+        />
+      )}
+
+      {/* toast (events, food reactions, achievements) */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+          background: '#fff', border: `2px solid ${theme.ink}`, color: theme.ink,
+          padding: '10px 18px', borderRadius: '99px', fontSize: '13px', fontWeight: 700,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)', zIndex: 150, maxWidth: '90%',
+          textAlign: 'center', ...pxFont,
+        }}>{toast}</div>
+      )}
+
+      {/* offline / welcome-back summary */}
+      {offline && (
+        <div onClick={() => setOffline(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 210, background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, ...pxFont,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#FFF8F4', borderRadius: 20, padding: '20px 22px', maxWidth: 320,
+            border: `3px solid ${theme.ink}`, textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 40 }}>😴</div>
+            <p style={{ fontSize: 12, color: theme.ink, ...titleFont, margin: '8px 0' }}>WELCOME BACK!</p>
+            <p style={{ fontSize: 14, color: theme.ink, opacity: 0.75, margin: '0 0 12px' }}>
+              you were away for {formatAway(offline.awayMs)}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, fontSize: 14, color: theme.ink }}>
+              {STATS.map(({ key, icon }) => {
+                const d = offline.delta[key] ?? 0
+                return <span key={key}>{icon} {d > 0 ? '+' : ''}{d}</span>
+              })}
+            </div>
+            <button onClick={() => setOffline(null)} style={{
+              marginTop: 16, padding: '8px 22px', borderRadius: 99,
+              border: `2px solid ${theme.ink}`, background: theme.accent, color: '#fff',
+              fontSize: 11, fontWeight: 700, cursor: 'pointer', ...titleFont,
+            }}>OK ♡</button>
+          </div>
+        </div>
+      )}
     </>
   )
+}
+
+function formatAway(ms: number): string {
+  const mins = Math.round(ms / 60000)
+  if (mins < 60) return `${mins} min`
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return m ? `${h}h ${m}m` : `${h}h`
 }

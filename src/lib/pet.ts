@@ -14,8 +14,24 @@ const ACTION_EFFECTS: Record<PetAction, StatDelta> = {
   hug:   { happy:  +12, energy: +3,                 xp: 2, coins: 1 },
 }
 
+// how much bond each action builds (hug is the big one)
+const AFFECTION_PER_ACTION: Record<PetAction, number> = {
+  feed: 1, play: 2, clean: 1, sleep: 1, treat: 2, hug: 4,
+}
+
 const EVOLUTION_XP: Record<PetStage, number> = {
   egg: 20, baby: 80, child: 200, teen: 450, adult: Infinity,
+}
+
+// immutably bump a counter key on a pet's counters map
+export function bumpCounter(
+  counters: Record<string, number> | undefined,
+  key: string,
+  by = 1,
+): Record<string, number> {
+  const next = { ...(counters ?? {}) }
+  next[key] = (next[key] ?? 0) + by
+  return next
 }
 
 const STAGE_ORDER: PetStage[] = ['egg', 'baby', 'child', 'teen', 'adult']
@@ -34,16 +50,25 @@ const SPEECHES: Record<PetMood['label'], string[]> = {
   content:   ['...', 'just chilling', 'i missed you', '*blinks*'],
   sad:       ['hungry...', 'feeling lonely', 'please visit more', "i'm cold"],
   miserable: ['please help me...', 'so hungry...', 'i feel terrible', "don't forget me"],
+  angry:     ['hmph! >:(', 'i am NOT happy', 'play with me!', 'grrr...'],
+  sick:      ['i feel icky...', 'achoo! >.<', 'i need a bath...', 'so tired...'],
 }
 
 export function getMood(pet: Pet): PetMood {
-  const avg = avgStats(pet)
   let label: PetMood['label']
-  if (avg >= 80)      label = 'ecstatic'
-  else if (avg >= 65) label = 'happy'
-  else if (avg >= 45) label = 'content'
-  else if (avg >= 25) label = 'sad'
-  else                label = 'miserable'
+  // unwell / cranky states take priority over the average-based mood
+  if (pet.clean <= 12 || pet.energy <= 8) {
+    label = 'sick'
+  } else if (pet.happy <= 18) {
+    label = 'angry'
+  } else {
+    const avg = avgStats(pet)
+    if (avg >= 80)      label = 'ecstatic'
+    else if (avg >= 65) label = 'happy'
+    else if (avg >= 45) label = 'content'
+    else if (avg >= 25) label = 'sad'
+    else                label = 'miserable'
+  }
   const opts = SPEECHES[label]
   return { label, speech: opts[Math.floor(Math.random() * opts.length)] }
 }
@@ -60,6 +85,8 @@ export function applyAction(pet: Pet, action: PetAction): {
     energy: clamp(pet.energy + (effect.energy ?? 0)),
     xp:     newXp,
     coins:  (pet.coins ?? 0) + (effect.coins ?? 0),
+    affection: (pet.affection ?? 0) + AFFECTION_PER_ACTION[action],
+    counters: bumpCounter(pet.counters, action),
     last_visit: new Date().toISOString(),
   }
   const { evolved, newStage } = checkEvolution(pet.stage, newXp)

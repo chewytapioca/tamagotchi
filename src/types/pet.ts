@@ -26,6 +26,12 @@ export interface Pet {
   coins: number
   owned_items: string[]
   equipped: Equipped
+  // bond + collections + progress
+  affection: number                       // bond points
+  inventory: Record<string, number>       // consumable food: { food_strawberry: 3 }
+  counters: Record<string, number>        // lifetime tallies for achievements
+  achievements: string[]                  // unlocked achievement ids
+  last_event: string                      // cooldown for random events
   born_at: string
   last_decay: string
   last_visit: string
@@ -35,7 +41,15 @@ export interface Pet {
 
 export type PetAction = 'feed' | 'play' | 'clean' | 'sleep' | 'treat' | 'hug'
 
-export type GameId = 'memory' | 'simon' | 'reaction'
+export type GameId = 'memory' | 'simon' | 'reaction' | 'catch'
+
+// daily weather, derived from the date (no storage)
+export type Weather = 'sunny' | 'rainy' | 'snowy' | 'blossom'
+
+export type TimeOfDay = 'morning' | 'day' | 'evening' | 'night'
+
+// a pet's food preferences, derived deterministically from its id
+export interface Favorites { loves: string; likes: string; hates: string }
 
 export interface StatDelta {
   hunger?: number
@@ -47,7 +61,7 @@ export interface StatDelta {
 }
 
 export interface PetMood {
-  label: 'ecstatic' | 'happy' | 'content' | 'sad' | 'miserable'
+  label: 'ecstatic' | 'happy' | 'content' | 'sad' | 'miserable' | 'angry' | 'sick'
   speech: string
 }
 

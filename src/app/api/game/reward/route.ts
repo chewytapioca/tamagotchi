@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMood } from '@/lib/pet'
 import { grantGameReward, isGameId } from '@/lib/shop'
+import { newlyUnlocked } from '@/lib/progress'
 import type { Pet } from '@/types/pet'
 
 // POST /api/game/reward  — body: { game, score }
@@ -33,6 +34,10 @@ export async function POST(request: Request) {
 
   const { updates, coins, xp, evolved } = grantGameReward(pet as Pet, game, Number(score))
 
+  const candidate = { ...(pet as Pet), ...updates } as Pet
+  const unlocked = newlyUnlocked(candidate)
+  if (unlocked.length) updates.achievements = [...(pet.achievements ?? []), ...unlocked]
+
   const { data: updatedPet, error: updateError } = await supabase
     .from('pets')
     .update(updates)
@@ -58,5 +63,6 @@ export async function POST(request: Request) {
     mood: getMood(updatedPet as Pet),
     evolved,
     earned: { coins, xp },
+    unlocked,
   })
 }

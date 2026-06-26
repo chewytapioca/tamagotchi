@@ -5,6 +5,7 @@ import type { Pet, PetMood, GameId } from '@/types/pet'
 import MemoryGame from '@/components/games/MemoryGame'
 import SimonGame from '@/components/games/SimonGame'
 import ReactionGame from '@/components/games/ReactionGame'
+import CatchGame from '@/components/games/CatchGame'
 
 interface PetState { pet: Pet; mood: PetMood; evolved: boolean }
 
@@ -18,6 +19,7 @@ interface Props {
 
 const GAMES: { id: GameId; name: string; emoji: string; blurb: string }[] = [
   { id: 'memory',   name: 'Memory Match', emoji: '🃏', blurb: 'find the pairs' },
+  { id: 'catch',    name: 'Catch!',       emoji: '🧺', blurb: 'catch the treats' },
   { id: 'simon',    name: 'Simon Says',   emoji: '🎵', blurb: 'repeat the pattern' },
   { id: 'reaction', name: 'Quick Tap',    emoji: '⭐', blurb: 'tap the star fast' },
 ]
@@ -132,6 +134,7 @@ export default function GamesHub({ pet, ink, accent, onClose, onUpdate }: Props)
                 <>
                   {busy && <div style={{ fontSize: 13, color: ink }}>saving reward…</div>}
                   {screen === 'memory'   && <MemoryGame   key="m" onComplete={s => handleComplete('memory', s)}   ink={ink} accent={accent} />}
+                  {screen === 'catch'    && <CatchGame    key="c" onComplete={s => handleComplete('catch', s)}    ink={ink} accent={accent} />}
                   {screen === 'simon'    && <SimonGame    key="s" onComplete={s => handleComplete('simon', s)}    ink={ink} />}
                   {screen === 'reaction' && <ReactionGame key="r" onComplete={s => handleComplete('reaction', s)} ink={ink} accent={accent} />}
                   <button onClick={() => setScreen('menu')} style={{
