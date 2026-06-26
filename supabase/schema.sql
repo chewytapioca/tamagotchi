@@ -61,6 +61,13 @@ create table public.pets (
   owned_items  jsonb   default '[]'::jsonb,   -- ["bow_pink", "bg_meadow", ...]
   equipped     jsonb   default '{}'::jsonb,   -- {"hat":"bow_pink","background":"bg_meadow","decor":["plant"]}
 
+  -- bond + collections + progress
+  affection    integer default 0 check (affection >= 0),
+  inventory    jsonb   default '{}'::jsonb,   -- consumable food: {"food_strawberry": 3}
+  counters     jsonb   default '{}'::jsonb,   -- lifetime tallies: {"feed": 12}
+  achievements jsonb   default '[]'::jsonb,   -- unlocked ids
+  last_event   timestamptz default now(),     -- random-event cooldown
+
   born_at      timestamptz default now(),
   last_decay   timestamptz default now(),  -- when decay last ran
   last_visit   timestamptz default now(),

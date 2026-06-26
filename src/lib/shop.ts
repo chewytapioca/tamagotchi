@@ -1,12 +1,13 @@
 import type { Pet, Equipped, EquipSlot, GameId } from '@/types/pet'
-import { checkEvolution } from '@/lib/pet'
+import { checkEvolution, bumpCounter } from '@/lib/pet'
+import { FOODS } from '@/lib/favorites'
 
 // ============================================================
 // shop catalog + pure economy helpers
 // shared by the API routes (server) and the UI (client)
 // ============================================================
 
-export type ItemType = EquipSlot | 'decor'
+export type ItemType = EquipSlot | 'decor' | 'food'
 
 export interface ShopItem {
   id: string
@@ -21,12 +22,18 @@ export interface ShopItem {
 }
 
 export const ITEM_TYPES: { type: ItemType; label: string; emoji: string }[] = [
+  { type: 'food',       label: 'Treats',   emoji: '🍓' },
   { type: 'hat',        label: 'Hats',     emoji: '🎩' },
   { type: 'outfit',     label: 'Outfits',  emoji: '👗' },
   { type: 'accessory',  label: 'Accents',  emoji: '👓' },
   { type: 'background', label: 'Scenes',   emoji: '🖼️' },
   { type: 'decor',      label: 'Room',     emoji: '🪴' },
 ]
+
+// consumable treats, derived from the FOODS table (stackable in inventory)
+const FOOD_ITEMS: ShopItem[] = FOODS.map(f => ({
+  id: f.id, name: f.name, type: 'food', price: f.price, icon: f.emoji, blurb: 'a tasty treat',
+}))
 
 export const SHOP_ITEMS: ShopItem[] = [
   // ── hats ──────────────────────────────────────────────
@@ -67,6 +74,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'cake',       name: 'Cake',     type: 'decor', price: 55, icon: '🎂', blurb: 'always a party' },
   { id: 'teddy',      name: 'Teddy',    type: 'decor', price: 65, icon: '🧸', blurb: 'snuggly pal' },
   { id: 'lamp',       name: 'Lamp',     type: 'decor', price: 50, icon: '🪔', blurb: 'cozy glow', minLevel: 2 },
+
+  // ── treats (consumable, stack in inventory) ───────────
+  ...FOOD_ITEMS,
 ]
 
 const MAX_DECOR = 4
@@ -98,11 +108,19 @@ export interface PurchaseResult {
 export function purchase(pet: Pet, itemId: string): PurchaseResult {
   const item = getItem(itemId)
   if (!item) return { ok: false, error: 'unknown item' }
+  if ((pet.coins ?? 0) < item.price) return { ok: false, error: 'not enough coins' }
+
+  // treats are consumable & stackable — they go into the inventory
+  if (item.type === 'food') {
+    const inv = { ...(pet.inventory ?? {}) }
+    inv[itemId] = (inv[itemId] ?? 0) + 1
+    return { ok: true, updates: { coins: (pet.coins ?? 0) - item.price, inventory: inv } }
+  }
+
   if (isOwned(pet, itemId)) return { ok: false, error: 'already owned' }
   if (petLevel(pet) < (item.minLevel ?? 1)) {
     return { ok: false, error: `unlocks at Lv.${item.minLevel}` }
   }
-  if ((pet.coins ?? 0) < item.price) return { ok: false, error: 'not enough coins' }
 
   return {
     ok: true,
@@ -154,10 +172,11 @@ const GAME_REWARDS: Record<GameId, RewardTable> = {
   memory:   { baseCoins: 6, bonusCoins: 18, baseXp: 4, bonusXp: 10 },
   simon:    { baseCoins: 5, bonusCoins: 20, baseXp: 4, bonusXp: 12 },
   reaction: { baseCoins: 4, bonusCoins: 14, baseXp: 3, bonusXp: 8 },
+  catch:    { baseCoins: 5, bonusCoins: 16, baseXp: 3, bonusXp: 9 },
 }
 
 export function isGameId(v: unknown): v is GameId {
-  return v === 'memory' || v === 'simon' || v === 'reaction'
+  return v === 'memory' || v === 'simon' || v === 'reaction' || v === 'catch'
 }
 
 export interface GameRewardResult {
@@ -179,6 +198,7 @@ export function grantGameReward(pet: Pet, game: GameId, score: number): GameRewa
   const updates: Partial<Pet> = {
     coins: (pet.coins ?? 0) + coins,
     xp: newXp,
+    counters: bumpCounter(pet.counters, 'games'),
     last_visit: new Date().toISOString(),
   }
   if (evolved && newStage) updates.stage = newStage

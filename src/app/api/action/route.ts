@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { applyAction, getMood } from '@/lib/pet'
+import { newlyUnlocked } from '@/lib/progress'
 import type { Pet, PetAction } from '@/types/pet'
 
 const VALID_ACTIONS: PetAction[] = ['feed', 'play', 'clean', 'sleep', 'treat', 'hug']
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
 
   const { updates, delta, evolved } = applyAction(pet as Pet, action)
 
+  // evaluate achievements against the would-be updated pet
+  const candidate = { ...(pet as Pet), ...updates } as Pet
+  const unlocked = newlyUnlocked(candidate)
+  if (unlocked.length) updates.achievements = [...(pet.achievements ?? []), ...unlocked]
+
   const { data: updatedPet, error: updateError } = await supabase
     .from('pets')
     .update(updates)
@@ -56,5 +62,6 @@ export async function POST(request: Request) {
     pet: updatedPet,
     mood: getMood(updatedPet as Pet),
     evolved,
+    unlocked,
   })
 }

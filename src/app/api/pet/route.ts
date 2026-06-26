@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getMood } from '@/lib/pet'
+import { getMood, applyDecay } from '@/lib/pet'
+import { newlyUnlocked } from '@/lib/progress'
+import { eventReady, rollEvent } from '@/lib/events'
 import type { Pet } from '@/types/pet'
 
-// GET /api/pet — get the current user's pet
+const OFFLINE_THRESHOLD_MS = 15 * 60 * 1000  // show an "away" summary past 15 min
+
+// GET /api/pet — get the current user's pet (applies decay + surprises on visit)
 export async function GET() {
   const supabase = await createClient()
 
@@ -23,16 +27,57 @@ export async function GET() {
     return NextResponse.json({ pet: null })
   }
 
-  // update last_visit timestamp
-  await supabase
+  const now = new Date()
+  const awayMs = now.getTime() - new Date(pet.last_visit).getTime()
+  const wasAway = awayMs > OFFLINE_THRESHOLD_MS
+
+  const updates: Partial<Pet> = { last_visit: now.toISOString() }
+
+  // only settle decay when the player was genuinely away — otherwise the
+  // 30s poll would reset last_decay every tick and stall it (and fight cron).
+  let delta: Record<string, number> = {}
+  if (wasAway) {
+    const decayed = applyDecay(pet as Pet)
+    Object.assign(updates, decayed.updates)
+    delta = decayed.delta as Record<string, number>
+  }
+
+  // occasional surprise event (coins / gift), gated by a cooldown
+  let event = null
+  if (eventReady(pet.last_event, now)) {
+    const rolled = rollEvent(now)
+    if (rolled) {
+      event = rolled
+      updates.coins = (pet.coins ?? 0) + rolled.coins
+      updates.last_event = now.toISOString()
+    }
+  }
+
+  // achievements that may now be satisfied
+  const candidate = { ...(pet as Pet), ...updates } as Pet
+  const unlocked = newlyUnlocked(candidate)
+  if (unlocked.length) updates.achievements = [...(pet.achievements ?? []), ...unlocked]
+
+  const { data: updatedPet } = await supabase
     .from('pets')
-    .update({ last_visit: new Date().toISOString() })
+    .update(updates)
     .eq('id', pet.id)
+    .select()
+    .single()
+
+  const finalPet = (updatedPet ?? pet) as Pet
+
+  const offline = awayMs > OFFLINE_THRESHOLD_MS
+    ? { awayMs, delta }
+    : null
 
   return NextResponse.json({
-    pet,
-    mood: getMood(pet as Pet),
+    pet: finalPet,
+    mood: getMood(finalPet),
     evolved: false,
+    offline,
+    event,
+    unlocked,
   })
 }
 

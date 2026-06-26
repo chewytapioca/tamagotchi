@@ -19,6 +19,7 @@ interface Props {
 
 function isEquipped(pet: Pet, item: ShopItem): boolean {
   const eq = pet.equipped ?? {}
+  if (item.type === 'food') return false           // consumables aren't equipped
   if (item.type === 'decor') return (eq.decor ?? []).includes(item.id)
   return eq[item.type] === item.id
 }
