@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# tamago 🐣
 
-## Getting Started
+a kawaii persistent web tamagotchi. your pet lives on a server and ages in real time — hungry if you don't visit, excited when you do.
 
-First, run the development server:
+## stack
+
+- **Next.js 14** (app router, typescript)
+- **Supabase** (postgres + auth)
+- **Vercel** (hosting + cron jobs)
+
+## setup
+
+### 1. install
+
+```bash
+npx create-next-app@latest tamago --typescript --tailwind --app
+cd tamago
+npm install @supabase/supabase-js @supabase/ssr
+```
+
+### 2. supabase
+
+1. create a project at [supabase.com](https://supabase.com)
+2. run the sql in `supabase/schema.sql` in the supabase sql editor
+3. copy your project url and anon key
+
+### 3. env
+
+create `.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+CRON_SECRET=any_random_string_you_make_up
+```
+
+### 4. run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## project structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+  app/
+    page.tsx                 ← home / pet page
+    auth/page.tsx            ← login / signup
+    pet/[id]/page.tsx        ← public shareable pet page
+    api/
+      pet/route.ts           ← create / get pet
+      action/route.ts        ← feed, play, clean, sleep
+      cron/route.ts          ← hourly stat decay (called by vercel cron)
+  components/
+    PetDisplay.tsx           ← animated SVG pet
+    StatBars.tsx             ← hunger / happy / clean / energy bars
+    ActionButtons.tsx        ← feed / play / clean / sleep buttons
+  lib/
+    supabase/
+      client.ts              ← browser supabase client
+      server.ts              ← server supabase client
+    pet.ts                   ← pet stat logic (decay, evo, xp)
+  types/
+    pet.ts                   ← shared typescript types
+supabase/
+  schema.sql                 ← run this in supabase sql editor
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## deploying to vercel
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. push to github, connect to vercel
+2. add all env vars in vercel dashboard
+3. add `vercel.json` cron config (already included)
+4. the cron hits `/api/cron` every hour with `Authorization: Bearer $CRON_SECRET`
