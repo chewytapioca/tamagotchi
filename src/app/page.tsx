@@ -522,12 +522,13 @@ export default function HomePage() {
       {/* tamagotchi device */}
       <div style={{
         position: 'relative',
-        width: '100%', maxWidth: '440px',
+        width: '100%', maxWidth: '420px',
         background: `
-          radial-gradient(120% 90% at 50% 12%, ${theme.shellLight} 0%, ${theme.shell} 46%, ${theme.shellDark} 100%)
+          radial-gradient(110% 80% at 50% 20%, ${theme.shellLight} 0%, ${theme.shell} 48%, ${theme.shellDark} 100%)
         `,
-        borderRadius: '50% 50% 48% 48% / 34% 34% 30% 30%',
-        padding: '3.4rem 2rem 3.2rem',
+        // true egg silhouette: narrow rounded top, fat round bottom
+        borderRadius: '50% 50% 50% 50% / 58% 58% 42% 42%',
+        padding: '4.8rem 2.6rem 3.6rem',
         boxShadow: `
           inset 0 6px 14px rgba(255,255,255,0.55),
           inset 0 -16px 30px ${theme.shellDark}aa,
@@ -590,32 +591,18 @@ export default function HomePage() {
         <div aria-hidden style={{ position: 'absolute', top: '8%', right: '16%', color: '#fff', fontSize: '14px', opacity: 0.85, pointerEvents: 'none' }}>✦</div>
         <div aria-hidden style={{ position: 'absolute', bottom: '12%', left: '12%', color: '#fff', fontSize: '10px', opacity: 0.7, pointerEvents: 'none' }}>✧</div>
 
-        {/* bottom inner shadow for a rounded, glossy body */}
+        {/* bottom inner shadow following the egg's round base */}
         <div aria-hidden style={{
-          position: 'absolute', left: 0, right: 0, bottom: 0, height: '22%',
-          background: `linear-gradient(0deg, ${theme.shellDark}66, transparent)`,
-          borderRadius: '0 0 44px 44px', pointerEvents: 'none',
+          position: 'absolute', left: 0, right: 0, bottom: 0, height: '26%',
+          background: `radial-gradient(120% 100% at 50% 100%, ${theme.shellDark}88, transparent 70%)`,
+          borderRadius: '0 0 50% 50% / 0 0 42% 42%', pointerEvents: 'none',
         }}/>
 
-        {/* LED + battery */}
-        <div aria-hidden style={{
-          position: 'absolute', top: '34px', right: '34px',
-          display: 'flex', alignItems: 'center', gap: '4px',
-        }}>
-          <div style={{
-            width: '8px', height: '8px', borderRadius: '50%',
-            background: `radial-gradient(circle at 30% 30%, #fff, ${theme.accent})`,
-            boxShadow: `0 0 8px ${theme.accent}cc`,
-            animation: 'led-blink 2.5s ease-in-out infinite',
-          }}/>
-          <style>{`@keyframes led-blink { 0%,80%,100%{opacity:1} 90%{opacity:0.3} }`}</style>
-        </div>
-
-        {/* branding */}
+        {/* branding (script-style, sits in the egg's upper curve) */}
         <div style={{
-          textAlign: 'center', marginBottom: '14px', marginTop: '6px',
-          fontSize: '12px', letterSpacing: '0.35em',
-          color: theme.ink, fontWeight: 700,
+          textAlign: 'center', marginBottom: '14px', marginTop: '-6px',
+          fontSize: '13px', letterSpacing: '0.32em',
+          color: theme.ink, fontWeight: 700, opacity: 0.85,
           ...titleFont,
         }}>
           TAMAGOTCHI
