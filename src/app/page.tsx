@@ -699,6 +699,8 @@ export default function HomePage() {
 
             {/* shop + arcade pills (with compact info) */}
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', alignItems: 'stretch' }}>
+              {/* spacer to keep SHOP/ARCADE centered against the info button */}
+              <div aria-hidden style={{ width: '52px', flexShrink: 0 }}/>
               {([
                 { key: 'shop' as const, label: 'SHOP', icon: '🛒' },
                 { key: 'games' as const, label: 'ARCADE', icon: '🎮' },
