@@ -7,13 +7,21 @@ import { PetWithCosmetics, SceneBackground, RoomDecor, DefaultRoom } from '@/com
 import Shop from '@/components/Shop'
 import GamesHub from '@/components/GamesHub'
 import InfoPanel from '@/components/InfoPanel'
-import InventoryBar from '@/components/InventoryBar'
+import FoodPicker from '@/components/FoodPicker'
+import { BoardTitle, LeftColumn, RightColumn, BottomRow, type BoardProps } from '@/components/BoardCards'
 import { getAgeInDays, getNextEvolutionProgress } from '@/lib/pet'
 import { bondLevel, bondTier, BOND_MAX, getAchievement } from '@/lib/progress'
 import { getWeather, clockLabel, getSpecialDay } from '@/lib/world'
 import type { Pet, PetMood, PetAction } from '@/types/pet'
 
 interface PetState { pet: Pet; mood: PetMood; evolved: boolean }
+
+interface BoardSlots {
+  title?: React.ReactNode
+  left?: React.ReactNode
+  right?: React.ReactNode
+  bottom?: React.ReactNode
+}
 
 // ── device themes ────────────────────────────────────────────
 type ThemeKey = 'sakura' | 'sky' | 'cafe' | 'mint' | 'lavender' | 'sunset'
@@ -183,6 +191,7 @@ export default function HomePage() {
   const [themeKey, setThemeKey] = useState<ThemeKey>('sakura')
   const [showThemes, setShowThemes] = useState(false)
   const [panel, setPanel] = useState<'shop' | 'games' | 'info' | null>(null)
+  const [foodPicker, setFoodPicker] = useState(false)
   const [now, setNow] = useState(() => new Date())
   const [offline, setOffline] = useState<{ awayMs: number; delta: Record<string, number> } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -282,6 +291,14 @@ export default function HomePage() {
     if (data.unlocked?.length) flashToast(`🏆 ${getAchievement(data.unlocked[0])?.name ?? 'Achievement'} unlocked!`)
   }
 
+  // feeding (from food picker or inventory card): play the eating animation too
+  function handleFeedResult(data: PetState & { unlocked?: string[]; message?: string }) {
+    petRef.current?.playAction('feed')
+    setParticleAction('feed')
+    setTimeout(() => setParticleAction(null), 1900)
+    applyPetState(data)
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!newName.trim()) return
@@ -320,7 +337,11 @@ export default function HomePage() {
     const active = activeBtn === cfg.key
     return (
       <button
-        onClick={() => state && handleAction(cfg.key)}
+        onClick={() => {
+          if (!state) return
+          if (cfg.key === 'feed') setFoodPicker(true)   // feed = choose a food
+          else handleAction(cfg.key)
+        }}
         disabled={!state || activeBtn !== null}
         aria-label={cfg.label}
         style={{
@@ -355,7 +376,7 @@ export default function HomePage() {
     )
   }
 
-  const Shell = ({ screenContent }: { screenContent: React.ReactNode }) => (
+  const Shell = ({ screenContent, board }: { screenContent: React.ReactNode; board?: BoardSlots }) => (
     <div style={{
       minHeight: '100vh',
       background: `
@@ -363,7 +384,8 @@ export default function HomePage() {
         radial-gradient(circle at 80% 80%, ${theme.shell}aa 0%, transparent 55%),
         ${theme.screen}
       `,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: board ? 'flex-start' : 'center',
       padding: '1rem', position: 'relative', ...pxFont,
     }}>
       {/* google fonts */}
@@ -412,6 +434,16 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* board title (board mode only) */}
+      {board?.title}
+
+      {/* board row: left cards · device · right cards */}
+      <div style={board
+        ? { display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: '1180px' }
+        : { display: 'contents' }}>
+        {board?.left}
+
+        <div style={board ? { flex: '1 1 360px', maxWidth: '440px', minWidth: '280px' } : { display: 'contents' }}>
       {/* egg-shaped device */}
       <div style={{
         position: 'relative',
@@ -632,6 +664,12 @@ export default function HomePage() {
           ...pxFont, letterSpacing: '6px',
         }}>⋆ ｡ ⋆ ｡ ⋆</div>
       </div>
+        </div>{/* device wrapper */}
+
+        {board?.right}
+      </div>{/* board row */}
+
+      {board?.bottom}
 
       {/* evolution banner */}
       {evolvedMsg && (
@@ -855,16 +893,26 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* treats inventory — tap to feed */}
-      <InventoryBar pet={pet} ink={theme.ink} onResult={applyPetState}/>
-
       {error && <p style={{ fontSize: '12px', color: '#c44', margin: 0, textAlign: 'center', ...pxFont }}>{error}</p>}
     </div>
   )
 
+  const boardProps: BoardProps = {
+    pet, ink: theme.ink, accent: theme.accent, now, offline,
+    onShop: () => setPanel('shop'),
+    onGames: () => setPanel('games'),
+    onInfo: () => setPanel('info'),
+    onFeedResult: handleFeedResult,
+  }
+
   return (
     <>
-      <Shell screenContent={screenContent}/>
+      <Shell screenContent={screenContent} board={{
+        title: <BoardTitle accent={theme.accent}/>,
+        left: <LeftColumn {...boardProps}/>,
+        right: <RightColumn {...boardProps}/>,
+        bottom: <BottomRow {...boardProps}/>,
+      }}/>
       {panel === 'shop' && (
         <Shop
           pet={pet} ink={theme.ink} accent={theme.accent}
@@ -883,6 +931,13 @@ export default function HomePage() {
         <InfoPanel
           pet={pet} ink={theme.ink} accent={theme.accent}
           onClose={() => setPanel(null)}
+        />
+      )}
+      {foodPicker && (
+        <FoodPicker
+          pet={pet} ink={theme.ink} accent={theme.accent}
+          onClose={() => setFoodPicker(false)}
+          onResult={handleFeedResult}
         />
       )}
 

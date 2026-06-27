@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMood, clamp, checkEvolution, bumpCounter } from '@/lib/pet'
-import { feedWithFood } from '@/lib/favorites'
+import { feedWithFood, isStaple } from '@/lib/favorites'
 import { newlyUnlocked } from '@/lib/progress'
 import type { Pet } from '@/types/pet'
 
@@ -31,17 +31,20 @@ export async function POST(request: Request) {
   }
   const pet = petRow as Pet
 
-  if ((pet.inventory?.[foodId] ?? 0) <= 0) {
+  const stock = pet.inventory?.[foodId] ?? 0
+  if (stock <= 0 && !isStaple(foodId)) {
     return NextResponse.json({ error: "you don't have that treat" }, { status: 400 })
   }
 
   const out = feedWithFood(pet, foodId)
   if (!out) return NextResponse.json({ error: 'unknown food' }, { status: 400 })
 
-  // consume one from the inventory
+  // consume one from the inventory (staples are free and never consumed)
   const inv = { ...(pet.inventory ?? {}) }
-  inv[foodId] = (inv[foodId] ?? 0) - 1
-  if (inv[foodId] <= 0) delete inv[foodId]
+  if (stock > 0) {
+    inv[foodId] = stock - 1
+    if (inv[foodId] <= 0) delete inv[foodId]
+  }
 
   const newXp = (pet.xp ?? 0) + out.xp
   const updates: Partial<Pet> = {

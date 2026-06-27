@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getMood, applyDecay } from '@/lib/pet'
 import { newlyUnlocked } from '@/lib/progress'
 import { eventReady, rollEvent } from '@/lib/events'
+import { STARTER_INVENTORY } from '@/lib/favorites'
 import type { Pet } from '@/types/pet'
 
 const OFFLINE_THRESHOLD_MS = 15 * 60 * 1000  // show an "away" summary past 15 min
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
       clean: 100,
       energy: 80,
       xp: 0,
+      inventory: STARTER_INVENTORY,
     })
     .select()
     .single()
