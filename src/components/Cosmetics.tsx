@@ -87,6 +87,42 @@ export function SceneBackground({ backgroundId }: { backgroundId?: string }) {
   )
 }
 
+// ── default cozy room (shown when no scene background is equipped) ──
+export function DefaultRoom() {
+  return (
+    <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+      {/* wall + floor */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, #FFE9F2 0%, #FFE0EC 62%)' }} />
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '34%', background: 'linear-gradient(180deg, #F6CFE0, #EFC0D6)' }} />
+      {/* round rug under the pet */}
+      <div style={{
+        position: 'absolute', left: '50%', bottom: '20%', transform: 'translateX(-50%)',
+        width: '64%', height: '20%', borderRadius: '50%',
+        background: 'radial-gradient(closest-side, #FBB8D2, #F3A6C6)', opacity: 0.85,
+      }} />
+      {/* window, top-left */}
+      <div style={{
+        position: 'absolute', left: '7%', top: '8%', width: '26%', height: '30%',
+        background: 'linear-gradient(180deg, #CFEAFB, #E9F6FF)',
+        border: '3px solid #F7B8D0', borderRadius: 8,
+      }}>
+        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2, background: '#F7B8D0', transform: 'translateX(-50%)' }} />
+        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: '#F7B8D0', transform: 'translateY(-50%)' }} />
+      </div>
+      {/* framed heart picture, top-right */}
+      <div style={{
+        position: 'absolute', right: '8%', top: '10%', width: 30, height: 30,
+        background: '#fff', border: '3px solid #F3A6C6', borderRadius: 6,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+      }}>💗</div>
+      {/* bookshelf + plants */}
+      <span style={{ position: 'absolute', right: '6%', bottom: '24%', fontSize: 30 }}>📚</span>
+      <span style={{ position: 'absolute', left: '9%', bottom: '22%', fontSize: 24 }}>🪴</span>
+      <span style={{ position: 'absolute', right: '20%', bottom: '23%', fontSize: 18 }}>🌱</span>
+    </div>
+  )
+}
+
 // ── room decorations along the bottom of the screen ──────────
 export function RoomDecor({ decor }: { decor?: string[] }) {
   const items = (decor ?? []).map(getItem).filter(Boolean)
