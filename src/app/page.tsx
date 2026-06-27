@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PetDisplayHandle } from '@/components/PetDisplay'
-import { PetWithCosmetics, SceneBackground, RoomDecor } from '@/components/Cosmetics'
+import { PetWithCosmetics, SceneBackground, RoomDecor, DefaultRoom } from '@/components/Cosmetics'
 import Shop from '@/components/Shop'
 import GamesHub from '@/components/GamesHub'
 import InfoPanel from '@/components/InfoPanel'
@@ -75,7 +75,7 @@ interface ActionConfig {
 const ACTIONS: ActionConfig[] = [
   { key: 'feed',  label: 'feed',  icon: '🍙', color: '#FF9755', colorDark: '#D87538',
     particles: ['🍙','♡','✦'],     msg: n => `${n} is munching ♡` },
-  { key: 'play',  label: 'play',  icon: '🎀', color: '#FF7BA5', colorDark: '#D85a85',
+  { key: 'play',  label: 'play',  icon: '🎮', color: '#A98AE0', colorDark: '#7E5FC0',
     particles: ['✦','⋆','♪','✧'],  msg: n => `${n} is having fun!` },
   { key: 'clean', label: 'clean', icon: '🫧', color: '#6BB5E8', colorDark: '#4895C8',
     particles: ['○','◦','✦'],      msg: n => `${n} is squeaky clean ✨` },
@@ -417,7 +417,7 @@ export default function HomePage() {
         position: 'relative',
         width: '100%', maxWidth: '440px',
         background: `linear-gradient(165deg, ${theme.shellLight} 0%, ${theme.shell} 50%, ${theme.shellDark} 100%)`,
-        borderRadius: '46% 46% 42% 42% / 52% 52% 38% 38%',
+        borderRadius: '52px 52px 44px 44px',
         padding: '3rem 1.8rem 3rem',
         boxShadow: `inset 0 -10px 20px ${theme.shellDark}88, 0 12px 32px ${theme.shellDark}66`,
         border: `3px solid ${theme.bezel}`,
@@ -487,7 +487,7 @@ export default function HomePage() {
           color: theme.ink, fontWeight: 700,
           ...titleFont,
         }}>
-          TAMAGO
+          TAMAGOTCHI
         </div>
 
         {/* LCD bezel */}
@@ -538,8 +538,10 @@ export default function HomePage() {
           }}>
             {/* faded pattern */}
             {screenPattern()}
-            {/* equipped scene background (covers pattern when set) */}
-            <SceneBackground backgroundId={state?.pet.equipped?.background}/>
+            {/* room scene: equipped background, else the cozy default room */}
+            {state && (state.pet.equipped?.background
+              ? <SceneBackground backgroundId={state.pet.equipped.background}/>
+              : <DefaultRoom/>)}
             {/* scanlines */}
             <div aria-hidden style={{
               position: 'absolute', inset: 0,
@@ -562,35 +564,12 @@ export default function HomePage() {
         {/* button grid — 3×2 balanced */}
         {state && (
           <>
-            {/* shop + arcade + more menu */}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-              {([
-                { key: 'shop' as const, label: 'SHOP', icon: '🛍' },
-                { key: 'games' as const, label: 'ARCADE', icon: '🎮' },
-                { key: 'info' as const, label: 'INFO', icon: '📖' },
-              ]).map(m => (
-                <button key={m.key}
-                  onClick={() => setPanel(m.key)}
-                  style={{
-                    flex: 1, padding: '8px 0', borderRadius: '12px',
-                    border: `2px solid ${theme.ink}`,
-                    background: `linear-gradient(180deg, ${theme.shellLight}, ${theme.shell})`,
-                    color: theme.ink, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                    fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
-                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.12)`,
-                    ...titleFont,
-                  }}
-                ><span style={{ fontSize: '16px' }}>{m.icon}</span>{m.label}</button>
-              ))}
-            </div>
-
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: '14px 8px',
               justifyItems: 'center',
-              marginTop: '14px',
+              marginTop: '18px',
             }}>
               <ActionButton cfg={ACTIONS[0]} prominent/>  {/* feed */}
               <ActionButton cfg={ACTIONS[1]} prominent/>  {/* play */}
@@ -598,6 +577,38 @@ export default function HomePage() {
               <ActionButton cfg={ACTIONS[3]}/>             {/* treat */}
               <ActionButton cfg={ACTIONS[4]}/>             {/* hug */}
               <ActionButton cfg={ACTIONS[5]}/>             {/* sleep */}
+            </div>
+
+            {/* shop + arcade pills (with compact info) */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', alignItems: 'stretch' }}>
+              {([
+                { key: 'shop' as const, label: 'SHOP', icon: '🛒' },
+                { key: 'games' as const, label: 'ARCADE', icon: '🎮' },
+              ]).map(m => (
+                <button key={m.key}
+                  onClick={() => setPanel(m.key)}
+                  style={{
+                    flex: 1, padding: '11px 0', borderRadius: '99px',
+                    border: `2px solid ${theme.ink}`,
+                    background: '#ffffffcc',
+                    color: theme.ink, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em',
+                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.12)`,
+                    ...titleFont,
+                  }}
+                ><span style={{ fontSize: '18px' }}>{m.icon}</span>{m.label}</button>
+              ))}
+              <button
+                onClick={() => setPanel('info')}
+                aria-label="info"
+                style={{
+                  width: '52px', borderRadius: '99px',
+                  border: `2px solid ${theme.ink}`, background: '#ffffffcc',
+                  color: theme.ink, cursor: 'pointer', fontSize: '20px',
+                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.12)`,
+                }}
+              >📖</button>
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
@@ -735,12 +746,28 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* pet — BIG and centered */}
+      {/* pet — BIG and centered, with a speech bubble above */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', margin: '4px 0',
+        justifyContent: 'center', margin: '2px 0',
         flexShrink: 0,
       }}>
+        {/* speech bubble */}
+        <div style={{ position: 'relative', marginBottom: '6px', maxWidth: '92%' }}>
+          <div style={{
+            fontSize: '13px', color: theme.ink, fontWeight: 700,
+            background: '#ffffffee', padding: '5px 12px', borderRadius: '12px',
+            border: `2px solid ${theme.ink}`, textAlign: 'center', ...pxFont,
+          }}>
+            {statusMsg || moodMessage(pet.name, mood.label)}
+          </div>
+          {/* little tail */}
+          <div style={{
+            position: 'absolute', left: '50%', bottom: '-6px', transform: 'translateX(-50%) rotate(45deg)',
+            width: '10px', height: '10px', background: '#ffffffee',
+            borderRight: `2px solid ${theme.ink}`, borderBottom: `2px solid ${theme.ink}`,
+          }}/>
+        </div>
         <PetWithCosmetics ref={petRef} pet={pet} mood={mood} onPet={fetchPet} inkColor={theme.ink}/>
       </div>
 
@@ -753,60 +780,45 @@ export default function HomePage() {
         <span style={{ fontWeight: 700 }}>{bondTier(bond)}</span>
       </div>
 
-      {/* status message */}
+      {/* stat bars — continuous fill with N / 100 labels */}
       <div style={{
-        textAlign: 'center', margin: '2px auto',
-        fontSize: '14px', color: theme.ink,
-        background: '#ffffffee',
-        padding: '4px 12px', borderRadius: '10px',
-        border: `1.5px solid ${theme.ink}33`,
-        maxWidth: '90%', fontWeight: 600,
-        ...pxFont,
+        display: 'flex', flexDirection: 'column', gap: '4px',
+        background: '#ffffffdd', padding: '7px 9px',
+        borderRadius: '10px', border: `2px solid ${theme.ink}22`,
       }}>
-        {statusMsg || moodMessage(pet.name, mood.label)}
-      </div>
-
-      {/* stat bars - cleaner contrast */}
-      <div style={{
-        display: 'flex', flexDirection: 'column', gap: '3px',
-        background: '#ffffffcc', padding: '6px 8px',
-        borderRadius: '8px', border: `1.5px solid ${theme.ink}22`,
-      }}>
+        <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
         {STATS.map(({ key, label, icon, color }) => {
           const value = pet[key] as number
           const low = value <= 25
           return (
             <div key={key} style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
+              display: 'flex', alignItems: 'center', gap: '6px',
               fontSize: '13px', ...pxFont,
             }}>
-              <span style={{ width:'15px', color: low ? '#c44' : color, fontSize:'14px', fontWeight: 700 }}>{icon}</span>
+              <span style={{ width: '15px', color: low ? '#c44' : color, fontSize: '14px', fontWeight: 700 }}>{icon}</span>
               <span style={{
-                width: '28px', color: low ? '#c44' : theme.ink,
-                fontWeight: 700, letterSpacing: '0.03em',
-                ...titleFont, fontSize: '9px',
+                width: '30px', color: low ? '#c44' : theme.ink,
+                fontWeight: 700, ...titleFont, fontSize: '9px',
               }}>{label}</span>
               <div style={{
-                flex: 1, height: '10px',
-                background: '#fff', border: `2px solid ${theme.ink}`,
-                padding: '1px', display: 'flex', gap: '1px',
-                borderRadius: '3px',
+                flex: 1, height: '12px',
+                background: `${theme.ink}14`, border: `2px solid ${theme.ink}`,
+                borderRadius: '99px', overflow: 'hidden', position: 'relative',
               }}>
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} style={{
-                    flex: 1,
-                    background: i < Math.floor(value / 10) ? (low ? '#c44' : color) : 'transparent',
-                    animation: low && i < Math.floor(value / 10) ? 'pulse 1.5s ease-in-out infinite' : undefined,
-                  }}/>
-                ))}
-                <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+                <div style={{
+                  width: `${value}%`, height: '100%',
+                  background: low ? '#e85a5a' : color,
+                  borderRadius: '99px',
+                  transition: 'width 0.5s ease',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -2px 2px rgba(0,0,0,0.12)',
+                  animation: low ? 'pulse 1.5s ease-in-out infinite' : undefined,
+                }}/>
               </div>
               <span style={{
-                width: '26px', textAlign: 'right',
+                width: '52px', textAlign: 'right',
                 color: low ? '#c44' : theme.ink,
-                fontVariantNumeric: 'tabular-nums',
-                fontWeight: 700, fontSize: '13px',
-              }}>{value}</span>
+                fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '12px',
+              }}>{value} / 100</span>
             </div>
           )
         })}
