@@ -24,28 +24,23 @@ export interface BoardProps {
   onFeedResult: (r: UseResult) => void
 }
 
-// ── shared card shell ───────────────────────────────────────
-function Card({ title, ink, accent, children, onClick }: {
-  title: string; ink: string; accent: string; children: React.ReactNode; onClick?: () => void
+// ── shared "in-game window" card shell ──────────────────────
+// chrome colours come from CSS vars (--win-*) set on the page root.
+function Card({ title, children, onClick }: {
+  title: string; children: React.ReactNode; onClick?: () => void
 }) {
   return (
-    <div onClick={onClick} style={{
-      background: '#FFFDFE', border: `2px solid ${accent}`, borderRadius: 16,
-      padding: '10px 12px 12px', boxShadow: '0 3px 10px rgba(0,0,0,0.06)',
-      cursor: onClick ? 'pointer' : 'default',
-    }}>
-      <div style={{
-        textAlign: 'center', color: accent, fontSize: 10, marginBottom: 8,
-        letterSpacing: '0.1em', ...titleF,
-      }}>{title}</div>
-      {children}
+    <div className="tama-window" onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}>
+      <div className="tama-window-title">{title}</div>
+      <div className="tama-window-body">{children}</div>
     </div>
   )
 }
 
 const colStyle: React.CSSProperties = {
-  flex: '1 1 230px', maxWidth: 270, minWidth: 210,
-  display: 'flex', flexDirection: 'column', gap: 14,
+  width: '100%', maxWidth: 290,
+  display: 'flex', flexDirection: 'column', gap: 22,
 }
 
 // ── MOOD & EXPRESSIONS ──
@@ -55,7 +50,7 @@ const MOODS: { emoji: string; label: string }[] = [
 ]
 function MoodCard({ ink, accent }: BoardProps) {
   return (
-    <Card title="MOOD & EXPRESSIONS" ink={ink} accent={accent}>
+    <Card title="MOOD & EXPRESSIONS">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, ...px }}>
         {MOODS.map(m => (
           <div key={m.label} style={{ textAlign: 'center' }}>
@@ -78,7 +73,7 @@ function FavoritesCard({ pet, ink, accent }: BoardProps) {
     ['Loves', getFood(fav.loves)], ['Likes', getFood(fav.likes)], ['Hates', getFood(fav.hates)],
   ]
   return (
-    <Card title="FAVORITES" ink={ink} accent={accent}>
+    <Card title="FAVORITES">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, textAlign: 'center', ...px }}>
         {rows.map(([label, food]) => (
           <div key={label}>
@@ -97,7 +92,7 @@ function RoomCard({ pet, ink, accent, onShop }: BoardProps) {
   const eq = pet.equipped ?? {}
   const worn = [eq.hat, eq.outfit, eq.accessory].filter(Boolean).length + (eq.decor?.length ?? 0)
   return (
-    <Card title="ROOM & CUSTOMIZATION" ink={ink} accent={accent} onClick={onShop}>
+    <Card title="ROOM & CUSTOMIZATION" onClick={onShop}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', ...px }}>
         <div style={{
           flex: 1, height: 54, borderRadius: 10, position: 'relative', overflow: 'hidden',
@@ -127,7 +122,7 @@ const GAME_TILES = [
 ]
 function GamesCard({ ink, accent, onGames }: BoardProps) {
   return (
-    <Card title="MINI GAMES (ARCADE)" ink={ink} accent={accent} onClick={onGames}>
+    <Card title="MINI GAMES (ARCADE)" onClick={onGames}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, ...px }}>
         {GAME_TILES.map(g => (
           <div key={g.label} style={{ textAlign: 'center' }}>
@@ -151,7 +146,7 @@ function JournalCard({ ink, accent }: BoardProps) {
     fetch('/api/journal').then(r => r.json()).then(d => setEntries(d.entries ?? [])).catch(() => setEntries([]))
   }, [])
   return (
-    <Card title="JOURNAL" ink={ink} accent={accent}>
+    <Card title="JOURNAL">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, ...px }}>
         {entries === null
           ? <div style={{ color: ink, opacity: 0.6, textAlign: 'center', fontSize: 13 }}>loading…</div>
@@ -173,7 +168,7 @@ function JournalCard({ ink, accent }: BoardProps) {
 function AchievementsCard({ pet, ink, accent }: BoardProps) {
   const have = new Set(pet.achievements ?? [])
   return (
-    <Card title="ACHIEVEMENTS" ink={ink} accent={accent}>
+    <Card title="ACHIEVEMENTS">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, ...px }}>
         {ACHIEVEMENTS.slice(0, 6).map(a => {
           const done = have.has(a.id)
@@ -198,7 +193,7 @@ const WEATHER_TILES: { kind: WeatherInfo['kind']; emoji: string; label: string }
 function WeatherCard({ ink, accent, now }: BoardProps) {
   const today = getWeather(now).kind
   return (
-    <Card title="WEATHER" ink={ink} accent={accent}>
+    <Card title="WEATHER">
       <div style={{ display: 'flex', gap: 6, justifyContent: 'space-around', ...px }}>
         {WEATHER_TILES.map(w => {
           const active = w.kind === today
@@ -222,7 +217,7 @@ function WeatherCard({ ink, accent, now }: BoardProps) {
 function InventoryCard({ pet, ink, accent, onFeedResult }: BoardProps) {
   const count = Object.values(pet.inventory ?? {}).reduce((a, b) => a + b, 0)
   return (
-    <Card title="INVENTORY" ink={ink} accent={accent}>
+    <Card title="INVENTORY">
       {count > 0
         ? <InventoryBar pet={pet} ink={ink} onResult={onFeedResult} />
         : <div style={{ textAlign: 'center', color: ink, opacity: 0.6, fontSize: 13, ...px }}>no treats — buy some in the shop! ♡</div>}
@@ -234,7 +229,7 @@ function InventoryCard({ pet, ink, accent, onFeedResult }: BoardProps) {
 function BondCard({ pet, ink, accent }: BoardProps) {
   const level = bondLevel(pet.affection ?? 0)
   return (
-    <Card title="AFFECTION (BOND)" ink={ink} accent={accent}>
+    <Card title="AFFECTION (BOND)">
       <div style={{ textAlign: 'center', ...px }}>
         <div style={{ fontSize: 16 }}>{Array.from({ length: BOND_MAX }).map((_, i) => i < level ? '💗' : '🤍').join('')}</div>
         <div style={{ fontSize: 14, color: ink, fontWeight: 700, marginTop: 4 }}>{bondTier(level)} · {level}/{BOND_MAX}</div>
@@ -251,7 +246,7 @@ const SPECIAL_TILES = [
 function SpecialDaysCard({ pet, ink, accent, now }: BoardProps) {
   const active = getSpecialDay(pet.born_at, now)?.id
   return (
-    <Card title="SPECIAL DAYS" ink={ink} accent={accent}>
+    <Card title="SPECIAL DAYS">
       <div style={{ display: 'flex', gap: 6, justifyContent: 'space-around', ...px }}>
         {SPECIAL_TILES.map(s => (
           <div key={s.id} style={{ textAlign: 'center', opacity: active === s.id ? 1 : 0.6 }}>
@@ -272,7 +267,7 @@ function SpecialDaysCard({ pet, ink, accent, now }: BoardProps) {
 function OfflineCard({ ink, accent, offline }: BoardProps) {
   const STAT = [['hunger', '♥'], ['happy', '✿'], ['clean', '✧'], ['energy', '⚡']] as const
   return (
-    <Card title="OFFLINE PROGRESS" ink={ink} accent={accent}>
+    <Card title="OFFLINE PROGRESS">
       {offline
         ? <div style={{ textAlign: 'center', ...px }}>
             <div style={{ fontSize: 13, color: ink, marginBottom: 6 }}>away for {formatAway(offline.awayMs)}</div>
@@ -324,13 +319,12 @@ export function RightColumn(p: BoardProps) {
 
 export function BottomRow(p: BoardProps) {
   return (
-    <div style={{
-      display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center',
-      width: '100%', maxWidth: 1180, marginTop: 16,
-    }}>
-      {[WeatherCard, InventoryCard, BondCard, SpecialDaysCard, OfflineCard].map((C, i) => (
-        <div key={i} style={{ flex: '1 1 200px', maxWidth: 240, minWidth: 180 }}><C {...p} /></div>
-      ))}
+    <div className="tama-bottom">
+      <WeatherCard {...p} />
+      <InventoryCard {...p} />
+      <BondCard {...p} />
+      <SpecialDaysCard {...p} />
+      <OfflineCard {...p} />
     </div>
   )
 }
