@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getItem } from '@/lib/shop'
+import { getFood } from '@/lib/favorites'
 
 interface JournalEntry { id: string; day: number; ts: string; emoji: string; text: string }
 
@@ -50,7 +51,21 @@ export async function GET() {
       }
       case 'treat': emoji = '🍰'; text = 'Enjoyed a treat.'; break
       case 'hug':   emoji = '💗'; text = 'Shared a warm hug.'; break
-      case 'feed':  emoji = '🍙'; text = 'Had a tasty meal.'; break
+      case 'feed': {
+        const food = typeof delta.food === 'string' ? getFood(delta.food) : undefined
+        const reaction = String(delta.reaction ?? '')
+        emoji = food?.emoji ?? '🍙'
+        if (food) {
+          const tail = reaction === 'loves' ? ' — loved it! ♡'
+            : reaction === 'likes' ? ' — liked it ♡'
+            : reaction === 'hates' ? ' — did not like it…'
+            : '.'
+          text = `Ate a ${food.name}${tail}`
+        } else {
+          text = 'Had a tasty meal.'
+        }
+        break
+      }
       case 'play':  emoji = '🎀'; text = 'Played together.'; break
       case 'clean': emoji = '🫧'; text = 'Got squeaky clean.'; break
       case 'sleep': emoji = '🌙'; text = 'Took a cozy nap.'; break

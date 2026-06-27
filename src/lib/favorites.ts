@@ -28,6 +28,17 @@ const FOOD_BY_ID: Record<string, Food> = Object.fromEntries(FOODS.map(f => [f.id
 export function getFood(id: string): Food | undefined { return FOOD_BY_ID[id] }
 export function isFood(id: string): boolean { return id in FOOD_BY_ID }
 
+// everyday staples are always available to feed (free, never consumed);
+// the rest are treats you buy and stock in the inventory.
+export const STAPLE_FOODS = ['food_rice', 'food_apple', 'food_carrot']
+export function isStaple(id: string): boolean { return STAPLE_FOODS.includes(id) }
+
+// what a freshly hatched pet starts with in its pantry
+export const STARTER_INVENTORY: Record<string, number> = {
+  food_strawberry: 2,
+  food_cake: 1,
+}
+
 function hashStr(s: string): number {
   let h = 2166136261
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) }
