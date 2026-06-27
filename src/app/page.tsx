@@ -182,10 +182,10 @@ function moodMessage(name: string, mood: PetMood['label']): string {
 }
 
 const STATS = [
-  { key: 'hunger' as const, label: 'HUN', icon: '♥', color: '#E85a5a' },
-  { key: 'happy'  as const, label: 'HAP', icon: '✿', color: '#E85a8a' },
-  { key: 'clean'  as const, label: 'CLN', icon: '✧', color: '#5aB8E8' },
-  { key: 'energy' as const, label: 'ENR', icon: '⚡', color: '#E8B85a' },
+  { key: 'hunger' as const, label: 'Hunger', icon: '🍙', color: '#E85a5a' },
+  { key: 'happy'  as const, label: 'Happy',  icon: '✿', color: '#E85a8a' },
+  { key: 'clean'  as const, label: 'Clean',  icon: '🫧', color: '#5aB8E8' },
+  { key: 'energy' as const, label: 'Energy', icon: '⚡', color: '#E8B85a' },
 ]
 
 function ActionParticles({ action }: { action: PetAction | null }) {
@@ -699,6 +699,8 @@ export default function HomePage() {
 
             {/* shop + arcade pills (with compact info) */}
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', alignItems: 'stretch' }}>
+              {/* spacer to keep SHOP/ARCADE centered against the info button */}
+              <div aria-hidden style={{ width: '52px', flexShrink: 0 }}/>
               {([
                 { key: 'shop' as const, label: 'SHOP', icon: '🛒' },
                 { key: 'games' as const, label: 'ARCADE', icon: '🎮' },
@@ -897,12 +899,16 @@ export default function HomePage() {
         borderRadius: '10px', border: `1.5px solid ${theme.ink}1a`,
       }}>
         <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
-        {STATS.map(({ key, icon, color }) => {
+        {STATS.map(({ key, label, icon, color }) => {
           const value = pet[key] as number
           const low = value <= 25
           return (
             <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '13px', color: low ? '#c44' : color, fontSize: '12px', fontWeight: 700 }}>{icon}</span>
+              <span style={{ fontSize: '12px' }}>{icon}</span>
+              <span style={{
+                width: '44px', color: low ? '#c44' : theme.ink,
+                fontSize: '12px', fontWeight: 700, ...pxFont,
+              }}>{label}</span>
               <div style={{
                 flex: 1, height: '8px',
                 background: `${theme.ink}14`, border: `1.5px solid ${theme.ink}55`,
