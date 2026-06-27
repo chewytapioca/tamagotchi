@@ -522,13 +522,13 @@ export default function HomePage() {
       {/* tamagotchi device */}
       <div style={{
         position: 'relative',
-        width: '100%', maxWidth: '420px',
+        width: '100%', maxWidth: '500px',
         background: `
           radial-gradient(110% 80% at 50% 20%, ${theme.shellLight} 0%, ${theme.shell} 48%, ${theme.shellDark} 100%)
         `,
         // true egg silhouette: narrow rounded top, fat round bottom
-        borderRadius: '50% 50% 50% 50% / 58% 58% 42% 42%',
-        padding: '4.8rem 2.6rem 3.6rem',
+        borderRadius: '50% 50% 50% 50% / 54% 54% 46% 46%',
+        padding: '4.8rem 3.4rem 3.6rem',
         boxShadow: `
           inset 0 6px 14px rgba(255,255,255,0.55),
           inset 0 -16px 30px ${theme.shellDark}aa,
