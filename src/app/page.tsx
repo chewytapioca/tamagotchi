@@ -8,9 +8,8 @@ import Shop from '@/components/Shop'
 import GamesHub from '@/components/GamesHub'
 import InfoPanel from '@/components/InfoPanel'
 import FoodPicker from '@/components/FoodPicker'
-import { BoardTitle, LeftColumn, RightColumn, BottomRow, type BoardProps } from '@/components/BoardCards'
 import { getAgeInDays, getNextEvolutionProgress } from '@/lib/pet'
-import { bondLevel, bondTier, BOND_MAX, getAchievement } from '@/lib/progress'
+import { getAchievement } from '@/lib/progress'
 import { getWeather, clockLabel, getSpecialDay } from '@/lib/world'
 import type { Pet, PetMood, PetAction } from '@/types/pet'
 
@@ -63,6 +62,37 @@ const BOARD_CSS = `
     background: #ffffffcc; box-shadow: 8px 0 0 #ffffff80;
   }
   .tama-window-body { padding: 10px 12px 12px; }
+`
+
+// tactile button feedback: hover lift, press depress, click bounce + ring
+const FX_CSS = `
+  .tama-action {
+    position: relative;
+    transition: transform .14s cubic-bezier(.34,1.56,.64,1), filter .14s, box-shadow .14s;
+  }
+  .tama-action:hover:not(:disabled) { transform: translateY(-4px) scale(1.06); filter: brightness(1.08) saturate(1.05); }
+  .tama-action:active:not(:disabled) { transform: translateY(2px) scale(.93); }
+  .tama-action::after {
+    content: ''; position: absolute; left: 16%; top: 8%; width: 68%; height: 40%;
+    background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,0));
+    border-radius: 50%; pointer-events: none;
+  }
+  .tama-action.pop { animation: tama-pop .45s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes tama-pop {
+    0% { transform: scale(1) } 30% { transform: scale(1.2) translateY(-3px) }
+    60% { transform: scale(.9) } 100% { transform: scale(1) }
+  }
+  .tama-action .ring {
+    position: absolute; inset: -3px; border-radius: 50%;
+    border: 3px solid #fff; opacity: 0; pointer-events: none;
+  }
+  .tama-action.pop .ring { animation: tama-ring .55s ease-out; }
+  @keyframes tama-ring { 0% { opacity: .85; transform: scale(.65) } 100% { opacity: 0; transform: scale(1.65) } }
+  .tama-pill {
+    transition: transform .14s cubic-bezier(.34,1.56,.64,1), box-shadow .14s, filter .14s;
+  }
+  .tama-pill:hover { transform: translateY(-2px) scale(1.03); filter: brightness(1.04); }
+  .tama-pill:active { transform: translateY(1px) scale(.97); }
 `
 
 // ── device themes ────────────────────────────────────────────
@@ -373,12 +403,13 @@ export default function HomePage() {
     </svg>
   )
 
-  // ── action button with own color + simpler shadows ──
+  // ── glossy action button with hover / press / bounce + ring ──
   const ActionButton = ({ cfg, prominent }: { cfg: ActionConfig; prominent?: boolean }) => {
-    const size = prominent ? 72 : 62
+    const size = prominent ? 74 : 64
     const active = activeBtn === cfg.key
     return (
       <button
+        className={`tama-action${active ? ' pop' : ''}`}
         onClick={() => {
           if (!state) return
           if (cfg.key === 'feed') setFoodPicker(true)   // feed = choose a food
@@ -390,26 +421,21 @@ export default function HomePage() {
           width: size, height: size,
           borderRadius: '50%',
           border: `2px solid ${cfg.colorDark}`,
-          background: active
-            ? cfg.colorDark
-            : `linear-gradient(180deg, ${cfg.color} 0%, ${cfg.colorDark} 100%)`,
-          boxShadow: active
-            ? `inset 0 2px 5px rgba(0,0,0,0.25)`
-            : `inset 0 2px 0 rgba(255,255,255,0.35), 0 2px 4px rgba(0,0,0,0.15)`,
+          background: `radial-gradient(120% 120% at 50% 22%, ${cfg.color} 0%, ${cfg.colorDark} 100%)`,
+          boxShadow: `inset 0 3px 2px rgba(255,255,255,0.45), inset 0 -5px 8px ${cfg.colorDark}, 0 5px 10px rgba(0,0,0,0.22)`,
           cursor: state && !activeBtn ? 'pointer' : 'default',
-          transition: 'all 0.08s',
-          transform: active ? 'translateY(3px)' : 'translateY(0)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           gap: '1px', padding: 0,
         }}
       >
-        <span style={{ fontSize: prominent ? '24px' : '20px' }}>{cfg.icon}</span>
+        <span className="ring"/>
+        <span style={{ fontSize: prominent ? '25px' : '21px', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' }}>{cfg.icon}</span>
         <span style={{
           fontSize: prominent ? '11px' : '10px',
           color: '#fff', fontWeight: 700,
           letterSpacing: '0.05em', textTransform: 'uppercase',
-          textShadow: '0 1px 0 rgba(0,0,0,0.3)',
+          textShadow: '0 1px 0 rgba(0,0,0,0.35)',
           ...titleFont,
         }}>
           {cfg.label}
@@ -482,6 +508,7 @@ export default function HomePage() {
         </div>
       )}
 
+      <style>{FX_CSS}</style>
       {board && <style>{BOARD_CSS}</style>}
 
       {/* board title (board mode only) */}
@@ -496,13 +523,33 @@ export default function HomePage() {
       <div style={{
         position: 'relative',
         width: '100%', maxWidth: '440px',
-        background: `linear-gradient(165deg, ${theme.shellLight} 0%, ${theme.shell} 50%, ${theme.shellDark} 100%)`,
+        background: `
+          radial-gradient(120% 90% at 50% 12%, ${theme.shellLight} 0%, ${theme.shell} 46%, ${theme.shellDark} 100%)
+        `,
         borderRadius: '50% 50% 48% 48% / 34% 34% 30% 30%',
         padding: '3.4rem 2rem 3.2rem',
-        boxShadow: `inset 0 -10px 20px ${theme.shellDark}88, 0 12px 32px ${theme.shellDark}66`,
+        boxShadow: `
+          inset 0 6px 14px rgba(255,255,255,0.55),
+          inset 0 -16px 30px ${theme.shellDark}aa,
+          inset 0 0 0 3px ${theme.shellLight}88,
+          0 18px 40px ${theme.shellDark}88,
+          0 4px 10px rgba(0,0,0,0.18)
+        `,
         border: `3px solid ${theme.bezel}`,
         zIndex: 1,
       }}>
+        {/* big elliptical top gloss */}
+        <div aria-hidden style={{
+          position: 'absolute', top: '2%', left: '8%', right: '8%', height: '34%',
+          background: 'radial-gradient(100% 100% at 50% 0%, rgba(255,255,255,0.75), rgba(255,255,255,0.0) 70%)',
+          borderRadius: '50%', pointerEvents: 'none',
+        }}/>
+        {/* diagonal reflection streak */}
+        <div aria-hidden style={{
+          position: 'absolute', top: '6%', left: '14%', width: '24%', height: '50%',
+          background: 'linear-gradient(150deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 60%)',
+          borderRadius: '50%', transform: 'rotate(-12deg)', filter: 'blur(2px)', pointerEvents: 'none',
+        }}/>
         {/* glossy plastic highlight */}
         <div aria-hidden style={{
           position: 'absolute',
@@ -615,7 +662,7 @@ export default function HomePage() {
           {/* screen */}
           <div style={{
             background: theme.screen, borderRadius: '14px',
-            padding: '14px 14px 12px', minHeight: '340px',
+            padding: '14px 14px 12px', minHeight: '370px',
             position: 'relative', overflow: 'hidden',
             boxShadow: `inset 0 2px 6px ${theme.bezelInner}55`,
             display: 'flex', flexDirection: 'column',
@@ -670,6 +717,7 @@ export default function HomePage() {
                 { key: 'games' as const, label: 'ARCADE', icon: '🎮' },
               ]).map(m => (
                 <button key={m.key}
+                  className="tama-pill"
                   onClick={() => setPanel(m.key)}
                   style={{
                     flex: 1, padding: '11px 0', borderRadius: '99px',
@@ -684,6 +732,7 @@ export default function HomePage() {
                 ><span style={{ fontSize: '18px' }}>{m.icon}</span>{m.label}</button>
               ))}
               <button
+                className="tama-pill"
                 onClick={() => setPanel('info')}
                 aria-label="info"
                 style={{
@@ -797,7 +846,6 @@ export default function HomePage() {
   const currentLevel = Math.floor(pet.xp / 50) + 1
   const weather = getWeather(now)
   const special = getSpecialDay(pet.born_at, now)
-  const bond = bondLevel(pet.affection ?? 0)
   const clock = clockLabel(now)
 
   const screenContent = (
@@ -829,17 +877,16 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* pet — BIG and centered, with a speech bubble above */}
+      {/* pet — the hero. grows to fill, speech bubble above */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', margin: '2px 0',
-        flexShrink: 0,
+        justifyContent: 'center', flex: 1, minHeight: 0,
       }}>
         {/* speech bubble */}
-        <div style={{ position: 'relative', marginBottom: '6px', maxWidth: '92%' }}>
+        <div style={{ position: 'relative', marginBottom: '4px', maxWidth: '90%' }}>
           <div style={{
-            fontSize: '13px', color: theme.ink, fontWeight: 700,
-            background: '#ffffffee', padding: '5px 12px', borderRadius: '12px',
+            fontSize: '12px', color: theme.ink, fontWeight: 700,
+            background: '#ffffffee', padding: '4px 11px', borderRadius: '12px',
             border: `2px solid ${theme.ink}`, textAlign: 'center', ...pxFont,
           }}>
             {statusMsg || moodMessage(pet.name, mood.label)}
@@ -851,57 +898,42 @@ export default function HomePage() {
             borderRight: `2px solid ${theme.ink}`, borderBottom: `2px solid ${theme.ink}`,
           }}/>
         </div>
-        <PetWithCosmetics ref={petRef} pet={pet} mood={mood} onPet={fetchPet} inkColor={theme.ink}/>
+        <div style={{ transform: 'scale(1.18)', transformOrigin: 'center top', margin: '6px 0 10px' }}>
+          <PetWithCosmetics ref={petRef} pet={pet} mood={mood} onPet={fetchPet} inkColor={theme.ink}/>
+        </div>
       </div>
 
-      {/* affection / bond hearts */}
+      {/* stats — slim 2x2 strip so they don't crowd the pet */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-        fontSize: '12px', color: theme.ink, ...pxFont,
-      }} title={`${bondTier(bond)} — ${bond}/${BOND_MAX}`}>
-        <span>{Array.from({ length: BOND_MAX }).map((_, i) => i < bond ? '💗' : '🤍').join('')}</span>
-        <span style={{ fontWeight: 700 }}>{bondTier(bond)}</span>
-      </div>
-
-      {/* stat bars — continuous fill with N / 100 labels */}
-      <div style={{
-        display: 'flex', flexDirection: 'column', gap: '4px',
-        background: '#ffffffdd', padding: '7px 9px',
-        borderRadius: '10px', border: `2px solid ${theme.ink}22`,
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px',
+        background: '#ffffffbb', padding: '6px 9px',
+        borderRadius: '10px', border: `1.5px solid ${theme.ink}1a`,
       }}>
         <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
-        {STATS.map(({ key, label, icon, color }) => {
+        {STATS.map(({ key, icon, color }) => {
           const value = pet[key] as number
           const low = value <= 25
           return (
-            <div key={key} style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              fontSize: '13px', ...pxFont,
-            }}>
-              <span style={{ width: '15px', color: low ? '#c44' : color, fontSize: '14px', fontWeight: 700 }}>{icon}</span>
-              <span style={{
-                width: '30px', color: low ? '#c44' : theme.ink,
-                fontWeight: 700, ...titleFont, fontSize: '9px',
-              }}>{label}</span>
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '13px', color: low ? '#c44' : color, fontSize: '12px', fontWeight: 700 }}>{icon}</span>
               <div style={{
-                flex: 1, height: '12px',
-                background: `${theme.ink}14`, border: `2px solid ${theme.ink}`,
-                borderRadius: '99px', overflow: 'hidden', position: 'relative',
+                flex: 1, height: '8px',
+                background: `${theme.ink}14`, border: `1.5px solid ${theme.ink}55`,
+                borderRadius: '99px', overflow: 'hidden',
               }}>
                 <div style={{
                   width: `${value}%`, height: '100%',
-                  background: low ? '#e85a5a' : color,
-                  borderRadius: '99px',
+                  background: low ? '#e85a5a' : color, borderRadius: '99px',
                   transition: 'width 0.5s ease',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -2px 2px rgba(0,0,0,0.12)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
                   animation: low ? 'pulse 1.5s ease-in-out infinite' : undefined,
                 }}/>
               </div>
               <span style={{
-                width: '52px', textAlign: 'right',
-                color: low ? '#c44' : theme.ink,
-                fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '12px',
-              }}>{value} / 100</span>
+                width: '22px', textAlign: 'right', ...pxFont,
+                color: low ? '#c44' : theme.ink, fontVariantNumeric: 'tabular-nums',
+                fontWeight: 700, fontSize: '11px',
+              }}>{value}</span>
             </div>
           )
         })}
@@ -942,22 +974,9 @@ export default function HomePage() {
     </div>
   )
 
-  const boardProps: BoardProps = {
-    pet, ink: theme.ink, accent: theme.accent, now, offline,
-    onShop: () => setPanel('shop'),
-    onGames: () => setPanel('games'),
-    onInfo: () => setPanel('info'),
-    onFeedResult: handleFeedResult,
-  }
-
   return (
     <>
-      <Shell screenContent={screenContent} board={{
-        title: <BoardTitle accent={theme.accent}/>,
-        left: <LeftColumn {...boardProps}/>,
-        right: <RightColumn {...boardProps}/>,
-        bottom: <BottomRow {...boardProps}/>,
-      }}/>
+      <Shell screenContent={screenContent}/>
       {panel === 'shop' && (
         <Shop
           pet={pet} ink={theme.ink} accent={theme.accent}
