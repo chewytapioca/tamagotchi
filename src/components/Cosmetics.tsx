@@ -100,25 +100,33 @@ export function DefaultRoom() {
         width: '64%', height: '20%', borderRadius: '50%',
         background: 'radial-gradient(closest-side, #FBB8D2, #F3A6C6)', opacity: 0.85,
       }} />
-      {/* window, top-left */}
+      {/* arched window, top-left (small & cute) */}
       <div style={{
-        position: 'absolute', left: '7%', top: '8%', width: '26%', height: '30%',
-        background: 'linear-gradient(180deg, #CFEAFB, #E9F6FF)',
-        border: '3px solid #F7B8D0', borderRadius: 8,
+        position: 'absolute', left: '9%', top: '11%', width: 40, height: 46,
+        background: 'linear-gradient(180deg, #CFEAFB 0%, #EAF7FF 100%)',
+        border: '3px solid #fff', borderRadius: '20px 20px 6px 6px',
+        boxShadow: '0 0 0 2px #F3A6C6, inset 0 0 0 2px #ffffffaa',
+        overflow: 'hidden',
       }}>
-        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2, background: '#F7B8D0', transform: 'translateX(-50%)' }} />
-        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: '#F7B8D0', transform: 'translateY(-50%)' }} />
+        {/* sky glints */}
+        <span style={{ position: 'absolute', left: 5, top: 8, fontSize: 9 }}>☁️</span>
+        <span style={{ position: 'absolute', right: 4, bottom: 4, fontSize: 8 }}>✦</span>
       </div>
+      {/* curtain pelmet over the window */}
+      <div style={{
+        position: 'absolute', left: '7%', top: '8%', width: 50, height: 10,
+        background: '#F7B8D0', borderRadius: 6,
+      }} />
       {/* framed heart picture, top-right */}
       <div style={{
-        position: 'absolute', right: '8%', top: '10%', width: 30, height: 30,
+        position: 'absolute', right: '9%', top: '12%', width: 28, height: 28,
         background: '#fff', border: '3px solid #F3A6C6', borderRadius: 6,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,
       }}>💗</div>
       {/* bookshelf + plants */}
-      <span style={{ position: 'absolute', right: '6%', bottom: '24%', fontSize: 30 }}>📚</span>
-      <span style={{ position: 'absolute', left: '9%', bottom: '22%', fontSize: 24 }}>🪴</span>
-      <span style={{ position: 'absolute', right: '20%', bottom: '23%', fontSize: 18 }}>🌱</span>
+      <span style={{ position: 'absolute', right: '6%', bottom: '23%', fontSize: 28 }}>📚</span>
+      <span style={{ position: 'absolute', left: '8%', bottom: '21%', fontSize: 22 }}>🪴</span>
+      <span style={{ position: 'absolute', right: '22%', bottom: '22%', fontSize: 16 }}>🌱</span>
     </div>
   )
 }

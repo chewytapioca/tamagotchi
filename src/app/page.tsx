@@ -23,6 +23,50 @@ interface BoardSlots {
   bottom?: React.ReactNode
 }
 
+// board layout + "in-game window" card chrome (colors come from CSS vars
+// set on the page root, so every card matches the active theme).
+const BOARD_CSS = `
+  .tama-board {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(320px,440px) minmax(0,1fr);
+    gap: 22px; align-items: start; width: 100%; max-width: 1240px;
+  }
+  .tama-board > :nth-child(1) { justify-self: end; }
+  .tama-board > :nth-child(3) { justify-self: start; }
+  .tama-board-device { justify-self: center; min-width: 0; width: 100%; }
+  .tama-bottom {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 22px; width: 100%; max-width: 1240px; margin-top: 22px;
+  }
+  @media (max-width: 1080px) {
+    .tama-board { grid-template-columns: 1fr; justify-items: center; }
+    .tama-board > :nth-child(1), .tama-board > :nth-child(3) { justify-self: center; }
+    .tama-bottom { grid-template-columns: repeat(2, 1fr); }
+  }
+  .tama-window {
+    border: 3px solid var(--win-bd);
+    border-radius: 12px;
+    background: var(--win-bg);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.08), 0 7px 16px rgba(0,0,0,0.13),
+                inset 0 0 0 2px rgba(255,255,255,0.75);
+    overflow: hidden;
+  }
+  .tama-window-title {
+    background: linear-gradient(180deg, var(--win-ta), var(--win-tb));
+    color: #fff; text-align: center; padding: 6px 8px; position: relative;
+    font-size: 9px; letter-spacing: 0.1em;
+    font-family: "Press Start 2P","VT323",monospace;
+    border-bottom: 2px solid var(--win-tb);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.28);
+  }
+  .tama-window-title::before {
+    content: ""; position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #ffffffcc; box-shadow: 8px 0 0 #ffffff80;
+  }
+  .tama-window-body { padding: 10px 12px 12px; }
+`
+
 // ── device themes ────────────────────────────────────────────
 type ThemeKey = 'sakura' | 'sky' | 'cafe' | 'mint' | 'lavender' | 'sunset'
 
@@ -387,6 +431,12 @@ export default function HomePage() {
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: board ? 'flex-start' : 'center',
       padding: '1rem', position: 'relative', ...pxFont,
+      ...(board ? {
+        ['--win-bd']: theme.bezel,
+        ['--win-ta']: theme.bezel,
+        ['--win-tb']: theme.bezelInner,
+        ['--win-bg']: theme.screen,
+      } as React.CSSProperties : {}),
     }}>
       {/* google fonts */}
       <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -434,17 +484,17 @@ export default function HomePage() {
         </div>
       )}
 
+      {board && <style>{BOARD_CSS}</style>}
+
       {/* board title (board mode only) */}
       {board?.title}
 
       {/* board row: left cards · device · right cards */}
-      <div style={board
-        ? { display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: '1180px' }
-        : { display: 'contents' }}>
+      <div className={board ? 'tama-board' : undefined} style={board ? undefined : { display: 'contents' }}>
         {board?.left}
 
-        <div style={board ? { flex: '1 1 360px', maxWidth: '440px', minWidth: '280px' } : { display: 'contents' }}>
-      {/* egg-shaped device */}
+        <div className={board ? 'tama-board-device' : undefined} style={board ? undefined : { display: 'contents' }}>
+      {/* tamagotchi device */}
       <div style={{
         position: 'relative',
         width: '100%', maxWidth: '440px',
@@ -475,6 +525,31 @@ export default function HomePage() {
           filter: 'blur(8px)',
           opacity: 0.5,
           pointerEvents: 'none',
+        }}/>
+
+        {/* bright rim along the top edge */}
+        <div aria-hidden style={{
+          position: 'absolute', top: '3px', left: '12%', right: '12%', height: '4px',
+          background: `linear-gradient(90deg, transparent, ${theme.shellLight}, #fff, ${theme.shellLight}, transparent)`,
+          borderRadius: '50%', filter: 'blur(1px)', opacity: 0.9, pointerEvents: 'none',
+        }}/>
+
+        {/* soft left-side vertical sheen */}
+        <div aria-hidden style={{
+          position: 'absolute', top: '12%', bottom: '20%', left: '4%', width: '7%',
+          background: `linear-gradient(90deg, ${theme.shellLight}aa, transparent)`,
+          borderRadius: '50%', filter: 'blur(7px)', opacity: 0.55, pointerEvents: 'none',
+        }}/>
+
+        {/* small sparkle glints on the shell */}
+        <div aria-hidden style={{ position: 'absolute', top: '8%', right: '16%', color: '#fff', fontSize: '14px', opacity: 0.85, pointerEvents: 'none' }}>✦</div>
+        <div aria-hidden style={{ position: 'absolute', bottom: '12%', left: '12%', color: '#fff', fontSize: '10px', opacity: 0.7, pointerEvents: 'none' }}>✧</div>
+
+        {/* bottom inner shadow for a rounded, glossy body */}
+        <div aria-hidden style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0, height: '22%',
+          background: `linear-gradient(0deg, ${theme.shellDark}66, transparent)`,
+          borderRadius: '0 0 44px 44px', pointerEvents: 'none',
         }}/>
 
         {/* top decoration */}
