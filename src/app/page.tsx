@@ -28,20 +28,18 @@ interface BoardSlots {
 const BOARD_CSS = `
   .tama-board {
     display: grid;
-    grid-template-columns: minmax(0,1fr) minmax(320px,440px) minmax(0,1fr);
-    gap: 22px; align-items: start; width: 100%; max-width: 1240px;
+    grid-template-columns: 248px minmax(300px,420px) 248px;
+    gap: 26px; align-items: start; justify-content: center;
+    width: 100%; margin: 0 auto;
   }
-  .tama-board > :nth-child(1) { justify-self: end; }
-  .tama-board > :nth-child(3) { justify-self: start; }
-  .tama-board-device { justify-self: center; min-width: 0; width: 100%; }
+  .tama-board-device { width: 100%; }
   .tama-bottom {
-    display: grid; grid-template-columns: repeat(5, 1fr);
-    gap: 22px; width: 100%; max-width: 1240px; margin-top: 22px;
+    display: grid; grid-template-columns: repeat(5, 196px);
+    gap: 18px; justify-content: center; width: 100%; margin: 22px auto 0;
   }
-  @media (max-width: 1080px) {
-    .tama-board { grid-template-columns: 1fr; justify-items: center; }
-    .tama-board > :nth-child(1), .tama-board > :nth-child(3) { justify-self: center; }
-    .tama-bottom { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 980px) {
+    .tama-board { grid-template-columns: minmax(0, 440px); }
+    .tama-bottom { grid-template-columns: repeat(2, minmax(0, 220px)); }
   }
   .tama-window {
     border: 3px solid var(--win-bd);
@@ -499,8 +497,8 @@ export default function HomePage() {
         position: 'relative',
         width: '100%', maxWidth: '440px',
         background: `linear-gradient(165deg, ${theme.shellLight} 0%, ${theme.shell} 50%, ${theme.shellDark} 100%)`,
-        borderRadius: '52px 52px 44px 44px',
-        padding: '3rem 1.8rem 3rem',
+        borderRadius: '50% 50% 48% 48% / 34% 34% 30% 30%',
+        padding: '3.4rem 2rem 3.2rem',
         boxShadow: `inset 0 -10px 20px ${theme.shellDark}88, 0 12px 32px ${theme.shellDark}66`,
         border: `3px solid ${theme.bezel}`,
         zIndex: 1,
@@ -552,30 +550,9 @@ export default function HomePage() {
           borderRadius: '0 0 44px 44px', pointerEvents: 'none',
         }}/>
 
-        {/* top decoration */}
-        <div style={{
-          position: 'absolute', top: '14px', left: '50%',
-          transform: 'translateX(-50%)',
-          fontSize: '16px', color: theme.ink,
-          ...pxFont, letterSpacing: '8px', opacity: 0.6,
-        }}>⋆ ♡ ⋆ ♡ ⋆</div>
-
-        {/* speaker holes */}
-        <div aria-hidden style={{
-          position: 'absolute', top: '38px', left: '24px',
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px',
-        }}>
-          {[...Array(9)].map((_, i) => (
-            <div key={i} style={{
-              width: '5px', height: '5px', borderRadius: '50%',
-              background: theme.bezel, opacity: 0.5,
-            }}/>
-          ))}
-        </div>
-
         {/* LED + battery */}
         <div aria-hidden style={{
-          position: 'absolute', top: '40px', right: '28px',
+          position: 'absolute', top: '34px', right: '34px',
           display: 'flex', alignItems: 'center', gap: '4px',
         }}>
           <div style={{
@@ -731,13 +708,6 @@ export default function HomePage() {
             </div>
           </>
         )}
-
-        <div style={{
-          position: 'absolute', bottom: '14px', left: '50%',
-          transform: 'translateX(-50%)',
-          fontSize: '11px', color: theme.ink, opacity: 0.35,
-          ...pxFont, letterSpacing: '6px',
-        }}>⋆ ｡ ⋆ ｡ ⋆</div>
       </div>
         </div>{/* device wrapper */}
 

@@ -39,8 +39,8 @@ function Card({ title, children, onClick }: {
 }
 
 const colStyle: React.CSSProperties = {
-  width: '100%', maxWidth: 290,
-  display: 'flex', flexDirection: 'column', gap: 22,
+  width: '100%',
+  display: 'flex', flexDirection: 'column', gap: 18,
 }
 
 // ── MOOD & EXPRESSIONS ──
@@ -123,11 +123,14 @@ const GAME_TILES = [
 function GamesCard({ ink, accent, onGames }: BoardProps) {
   return (
     <Card title="MINI GAMES (ARCADE)" onClick={onGames}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, ...px }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8, ...px }}>
         {GAME_TILES.map(g => (
-          <div key={g.label} style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 22, background: `${accent}14`, border: `1.5px solid ${accent}55`, borderRadius: 8, padding: '5px 0' }}>{g.emoji}</div>
-            <div style={{ fontSize: 10, color: ink, marginTop: 2, ...titleF }}>{g.label}</div>
+          <div key={g.label} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: `${accent}12`, border: `1.5px solid ${accent}44`, borderRadius: 10, padding: '6px 8px',
+          }}>
+            <span style={{ fontSize: 20 }}>{g.emoji}</span>
+            <span style={{ fontSize: 11, color: ink, ...titleF }}>{g.label}</span>
           </div>
         ))}
       </div>
